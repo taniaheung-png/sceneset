@@ -1,4 +1,4 @@
-# SceneSet — tasklist.md
+﻿# SceneSet — tasklist.md
 
 > **DRAFT for founder review** (AI-drafted 2026-10-25). Nothing is pre-checked. Mark `[x]` only after the stated **Gate** passes; partial/failed/blocked tasks stay `[ ]` with a status note. Requirement IDs (R##) are defined in `PRD.md` §2.1. Execute strictly the first pending task; stop at each phase checkpoint for the founder's manual review and commit. Never stage/commit automatically.
 
@@ -12,20 +12,20 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 - [x] **P0.2** Read assignment pp.10, 26–27, 32–43 and cited lecture pages. Gate: coverage and unread image slides disclosed in `PRD.md`.
 - [x] **P0.3** Write `PRD.md` (7 sections, rationale, traceability). Gate: all R01–R30 appear in §2.1 and §8.
 - [x] **P0.4** Write `tasklist.md`. Gate: every R-ID appears in at least one task below (coverage check in "Coverage matrix" at end).
-- [ ] **P0.5** Founder reviews, decides open items (see "Open decisions"), commits manually. *Status: waiting on founder.*
+- [ ] **P0.5** Founder reviews, decides open items, commits manually. *Status: decisions given at Phase 1 start (see PRD decisions list); commit is the founder's manual step.*
 
 ## Phase 1 — Foundation and design system  (R01, R25, R26)
 
-- [ ] **P1.1** (R01) Founder decides whether to install `ui-ux-pro-max`; if installed, run its `--design-system "event planning desktop workspace"` and record relevance. *Prereq:* P0.5. Gate: decision and result (or "unavailable") written to `PRD.md` §3.4.
-- [ ] **P1.2** Scaffold Next.js (App Router, TS, Tailwind) in the project root with npm. Gate: BUILD + DEV on `/`.
-- [ ] **P1.3** Add `.gitignore` (env, `.next`, node_modules), `.env.example` (placeholders, public/private labelled). Gate: `git check-ignore`-equivalent review of file; `.env.example` contains no real values.
-- [ ] **P1.4** (R25) Define CSS tokens (colour, spacing, type, border, radius, shadow, motion) and load fonts via `next/font`. Gate: tokens in one file; DEV.
-- [ ] **P1.5** (R25) Measure contrast of every text/background and control token pair; adjust tokens. Gate: script or tool output saved in `docs/QA.md`, all text ≥4.5:1.
-- [ ] **P1.6** (R25) Accessible primitives: Button, Input+Label, Select, Dialog (focus trap/restore/Escape), StatusChip, CueTab (date/status motif). Gate: A11Y on a scratch page, then removed or kept as `/dev-kit` not linked.
-- [ ] **P1.7** (R26) App shell: sidebar, header with workspace/event switcher placeholders, collapse menu <1024px. Gate: VIS, no horizontal page overflow.
-- [ ] **P1.8** (R01) Landing page: audience/problem/outcome, Try demo + Create event CTAs, labelled-placeholder product preview built from CSS/SVG, workflow, pricing link. No fake proof. Gate: VIS incl. 375×667 CTA visible; text review for unsupported claims.
-- [ ] **P1.9** (R21) Pricing route stub + public nav links (`/`, `/pricing`, `/privacy`, `/login`, `/signup`) that resolve. Gate: DEV click-through.
-- [ ] **P1.10** Add scripts: `lint`, `typecheck`, `test`. Gate: TYPE + LINT + BUILD pass; Phase 1 checkpoint report; confirm no secrets in files.
+- [x] **P1.1** (R01) Install `ui-ux-pro-max` project-locally; read SKILL.md; run `--design-system "event planning desktop workspace"` and record relevance. Gate: result and relevance verdict written to `PRD.md` §3.4. *Done: installed at `.claude/skills/ui-ux-pro-max`; query 1 off-target (rejected), narrower retry accepted.*
+- [x] **P1.2** Scaffold Next.js (App Router, TS, Tailwind) in the project root with npm. Gate: BUILD + DEV on `/`.
+- [x] **P1.3** Add `.gitignore` (env, `.next`, node_modules), `.env.example` (placeholders, public/private labelled). Gate: `git check-ignore`-equivalent review of file; `.env.example` contains no real values. *Note: Git not initialised, so verified by file review + pattern scan, not git check-ignore.*
+- [x] **P1.4** (R25) Define CSS tokens (colour, spacing, type, border, radius, shadow, motion) and load fonts via `next/font`. Gate: tokens in one file; DEV.
+- [x] **P1.5** (R25) Measure contrast of every text/background and control token pair; adjust tokens. Gate: script or tool output saved in `docs/QA.md`, all text ≥4.5:1.
+- [x] **P1.6** (R25) Accessible primitives: Button, Input+Label, Select, Dialog (focus trap/restore/Escape), StatusChip, CueTab (date/status motif). Gate: A11Y on a scratch page, then removed or kept as `/dev-kit` not linked.
+- [x] **P1.7** (R26) App shell: sidebar, header with workspace/event switcher placeholders, collapse menu <1024px. Gate: VIS, no horizontal page overflow.
+- [x] **P1.8** (R01) Landing page: audience/problem/outcome, Try demo + Create event CTAs, labelled-placeholder product preview built from CSS/SVG, workflow, pricing link. No fake proof. Gate: VIS incl. 375×667 CTA visible; text review for unsupported claims. *Done: landing + static SamplePreview; temporary 'Prototype build' notice added (remove at P8.9).*
+- [x] **P1.9** (R21) Pricing route stub + public nav links (`/`, `/pricing`, `/privacy`, `/login`, `/signup`) that resolve. Gate: DEV click-through. *Done: pricing (static plans, provisional-price notice), privacy (interim), login/signup show 'Not connected yet' instead of forms, /demo preview shell.*
+- [x] **P1.10** Add scripts: `lint`, `typecheck`, `test`. Gate: TYPE + LINT + BUILD pass; Phase 1 checkpoint report; confirm no secrets in files.
 
 ## Phase 2 — Database, authentication, workspace isolation  (R02–R05, R27, R28)
 *Prereq for all: founder supplies a Supabase development project (URL, anon key, optional service key) in `.env.local`. **BLOCKED until supplied.***
@@ -108,8 +108,8 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 - [ ] **P6.9** (R17) Readiness on dashboard with links to fix each item. Gate: links land on right view.
 - [ ] **P6.10** (R18) Summary route (details, responsibilities, budget, suppliers, guests, schedule, readiness, layout). Gate: authz — other workspace → not-found.
 - [ ] **P6.11** (R18) Print CSS. Gate: print preview, no nav/controls, no clipping, tables readable.
-- [ ] **P6.12** (R19) Demo template RPC creating isolated disposable workspace with fictional event data. Gate: DB — data visible only to that session; no real-looking personal data.
-- [ ] **P6.13** (R19) `/demo` flow (anonymous sign-in or sign-up fallback) and "Reset demo". Gate: reset affects only that demo workspace (two-session test).
+- [ ] **P6.12** (R19) 'Load demo data' RPC copying a fictional template into the signed-in user's own workspace. Gate: DB — copy visible only to that workspace's members; no real-looking personal data.
+- [ ] **P6.13** (R19) Public read-only `/demo` backed by the fixed fictional dataset (no login, no writes) plus 'Reset demo' for the signed-in copy. Gate: anonymous visitor cannot write; reset affects only that user's demo copy (two-user test).
 - [ ] **P6.14** (R24) `/privacy` page: what is collected, why, retention, deletion, cookies (essential only). Gate: plain-language review.
 - [ ] **P6.15** (R20, R24) Settings: profile, workspace name, privacy links. Gate: persists.
 - [ ] **P6.16** (R24) Account deletion with sole-owner safeguard (transfer or delete workspace first). Gate: blocked when sole owner with members; succeeds otherwise; data gone.
@@ -137,7 +137,7 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 - [ ] **P8.6** Error/network/validation states: simulate failure and confirm data preserved, no false "Saved". Gate: manual log.
 - [ ] **P8.7** Calculation audit (money, readiness, headcount, timezone). Gate: `npm test` passes.
 - [ ] **P8.8** Add E2E organiser-flow check (smallest tool, e.g., Playwright) + access-denial checks. Gate: runs green locally.
-- [ ] **P8.9** Remove misleading placeholders, update `PRD.md`/`tasklist.md` to implemented state, record limitations. Gate: diff review.
+- [ ] **P8.9** Remove misleading placeholders (incl. PrototypeNotice and /demo preview banner, /dev/kit), update `PRD.md`/`tasklist.md` to implemented state, record limitations. Gate: diff review.
 - [ ] **P8.10** (R29) `README.md`: clean setup, migrations, seed/demo, env config, tests, deployment, public-access verification checklist, availability-period checklist, repo/live URL placeholders. Gate: clean-setup dry run on a fresh dev DB.
 - [ ] **P8.11** (R29) `docs/QA.md` human testing grid with blank "What went well / Needs improvement / Questions / Ideas" (L5 testing grid) and research log. Gate: blanks remain blank.
 - [ ] **P8.12** (R30) Concise future-upgrade list in README. Gate: matches `PRD.md` §2.5.
@@ -148,14 +148,16 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 ## Deferred (post-launch backlog — not MVP)
 Templates, real supplier-referral revenue, public RSVP, email invitations, calendar export, CSV/PDF export, realtime updates, seating optimisation, multi-currency, audit log, Stripe billing.
 
-## Open decisions for the founder (Phase 0)
-1. Supabase development project and email delivery for password reset (blocks Phase 2).
-2. Install `ui-ux-pro-max`? (Not found; Phase 1 will use fallback design requirements otherwise.)
-3. Confirm default currency HKD and prices HKD 149/event, 299/month (hypotheses).
-4. Confirm role matrix, free-plan limits, add-member-by-existing-account approach.
-5. Allow Supabase anonymous sign-ins for the demo, or require sign-up first?
-6. Initialise a Git repository? (Project is not a repo; I will not create one unasked.)
-7. Whether to treat `ponytail` as justification to skip zod and use hand-written validation (my proposal).
+## Founder decisions (resolved at start of Phase 1)
+1. Supabase dev project: still needed for Phase 2 (blocks Phase 2 only).
+2. ui-ux-pro-max: installed project-locally.
+3. Currency HKD; prices HKD 149/event and 299/month stay provisional, unvalidated hypotheses.
+4. Role matrix as in PRD §5. Free-plan limits and add-member-by-existing-account: defaults kept.
+5. Demo: public read-only, no login; sign-up required to create/edit; anonymous sign-ins deferred.
+6. Git: not initialised by the assistant; founder runs git commands manually.
+7. Validation: hand-written, no zod unless Phase 2 justifies it.
 
 ## Coverage matrix (R-ID → first implementing tasks)
 R01 P1.8 · R02 P2.13–14,P2.17 · R03 P2.15–16 · R04 P2.18 · R05 P2.5,P2.19 · R06 P3.1–6 · R07 P3.7,P4.10,P5.4,P5.8,P6.17 · R08 P3.8–11 · R09 P3.12 · R10 P4.1–2 · R11 P4.3–4 · R12 P4.5–9 · R13 P5.1–3 · R14 P5.5–7 · R15 P6.1–7 · R16 P3.5,3.10,4.2,4.8,5.2 · R17 P6.8–9 · R18 P6.10–11 · R19 P6.12–13 · R20 P6.15 · R21 P1.9,P7.1 · R22 P7.2–6 · R23 P7.7 · R24 P3.13,P6.14,P6.16 · R25 P1.4–6,P8.4 · R26 P1.7,P8.5 · R27 P2.4,2.9–10,P8.3 · R28 P2.20,P4.6,P5.6 · R29 P8.1,8.10–11 · R30 P8.12
+
+

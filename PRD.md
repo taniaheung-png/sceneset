@@ -4,10 +4,19 @@
 
 **Status key.** *[SRC]* = requirement from the assignment (PDF page cited). *[USER]* = requirement from the founder's build brief. *[ASM]* = implementation assumption or hypothesis, changeable. Prices, permissions and engineering choices are **[ASM]**, not instructor requirements.
 
+**Founder decisions recorded at the start of Phase 1** (reversible unless stated):
+1. `ui-ux-pro-max` installed project-locally (done; see §3.4).
+2. **Demo = read-only fictional demo without login** (`/demo`). Creating or editing persistent workspaces requires sign-up. Anonymous sign-ins are **deferred** (not in MVP). Signed-in users may load an isolated *editable* fictional copy into their own workspace (Phase 6).
+3. Prices HKD 149/event and HKD 299/month stay as provisional, **unvalidated pricing hypotheses**, labelled as such wherever shown.
+4. Role matrix as in §5 (owner / organiser / collaborator).
+5. Image-only-slide limitation stays documented; no visual inspection is claimed.
+6. Supabase configuration does not block Phase 1. Database/auth tasks (Phase 2) stay unchecked until they can be tested against a real development project.
+Implementation assumptions made in Phase 1: Next.js 16.4.3 scaffold (`cacheComponents`/`partialPrefetching` switched **off** for simpler cookie-session pages; revisit if caching is needed); hand-written validation, no zod yet (Ponytail: add only if justified in Phase 2); no component library beyond five small primitives; native `<dialog>` for modals; temporary "Prototype build" notice on public pages and an in-shell "Preview, not the working app" banner on `/demo` (remove/update at Phase 8).
+
 **Source coverage (Phase 0 disclosure).**
 - Read as text: assignment pp. 10, 26–27, 32–43; L1 pp. 5–8, 14–26; L2 pp. 10–20, 31–38, 48–49, 60–72; L3 pp. 14–16, 25–26, 30–39, 42–46; L4 pp. 36–46, 60–78; L5 pp. 40–42, 49–52, 57–92; L6 pp. 49–51, 62–78, 80–117; L7 pp. 5–36, 40–87.
 - **Not visually inspected:** image-only slides (no PDF page renderer installed; I did not install one). Includes L1 pp. 14 and 18 (value-equation graphics; the text versions on L1 pp. 5–6 and 15–23 were used), L5 pp. 59/63/66/68/73–74/77/81–82/85/87/89–91 (persona, journey, HMW, sketching diagrams), L6 pp. 69/81/83/85/87/89/92/94/99/101/104/109–110 (diagrams and videos), L7 pp. 41/53–54/56/72/75/79/81/83. The persona, journey and sketch content below follows each slide's text, not its image.
-- **Skills actually loaded:** `ponytail` (full) and `frontend-design`. **`ui-ux-pro-max` is not installed** (searched `~/.claude`, `~/.agents`, `~/.codex`, project `.claude`/`.agents`). No design-system search ran. §3 uses the brief's explicit design requirements as the fallback; upstream is https://github.com/nextlevelbuilder/ui-ux-pro-max-skill. Founder decides whether to install it before Phase 1.
+- **Skills actually loaded:** `ponytail` (full), `frontend-design`, and (from Phase 1) `ui-ux-pro-max`. It was absent in Phase 0; in Phase 1 it was installed **project-locally** at `.claude/skills/ui-ux-pro-max` from https://github.com/nextlevelbuilder/ui-ux-pro-max-skill (commit `d14efff`, 2026-10-23; `scripts/tests` and non-skill repo files not copied; scripts inspected, no network/exec calls). Not installed globally; nothing overwritten. Its SKILL.md was read and `search.py --design-system` run (results in §3.4).
 - **Environment:** Node v22.13.0, npm 10.9.2, Python 3.13. Project dir is empty of code and is **not a Git repository** (no baseline commit). `psql`, `supabase` CLI absent. No Supabase credentials observed. Phase 2 is **blocked** until the founder supplies a Supabase development project (see §6).
 
 ---
@@ -165,7 +174,7 @@ Rules: rates are decimals; every function returns "n/a" for zero/invalid denomin
 | R16 | Search and filters per view; reset; no-results | SRC p.26 |
 | R17 | Readiness checklist (transparent) | SRC p.26 workflow step 9; USER |
 | R18 | Print-friendly event summary (authorised route) | SRC p.26 |
-| R19 | Fictional demo data in an isolated disposable workspace; reset | SRC p.26; USER |
+| R19 | Fictional demo data: public read-only demo without login; signed-in users can load an isolated editable copy into their own workspace and reset it | SRC p.26; USER (decision 2) |
 | R20 | Settings (profile, workspace, privacy, data deletion) | SRC p.27 |
 | R21 | Pricing page: Free Personal, Event Upgrade, Organiser monthly | SRC p.27 |
 | R22 | Test-only payment sandbox (success/cancel/fail), "No real payment taken" | SRC p.27; USER |
@@ -214,7 +223,7 @@ Specialist templates (assignment p.10 revenue idea), supplier referrals as real 
 | `/privacy` | Privacy page / PICS | public | R24 |
 | `/login`, `/signup` | Account | public | R02 |
 | `/forgot-password`, `/reset-password` | Recovery | public | R03 |
-| `/demo` | Create isolated demo workspace → redirect | public/auth | R19 |
+| `/demo`, `/demo/[view]` | Read-only fictional demo (no login; Phase 1 = static preview shell) | public | R19 |
 | `/onboarding` | Create workspace; blank event or demo | auth | R04 |
 | `/w/[ws]/events` | Events list + search | member | R06 |
 | `/w/[ws]/events/[ev]` | Dashboard | member | R07 |
@@ -255,9 +264,19 @@ Wireframe — event dashboard (1440px):
 +--------+--------------------------------------------------------------+
 ```
 
-### 3.4 Visual system (one system for marketing and app) — fallback design (UI UX Pro Max unavailable)
+### 3.4 Visual system (one system for marketing and app)
+
+**UI UX Pro Max results (Phase 1, actually run; relevance checked).**
+- Query 1 `"event planning desktop workspace" --design-system`: **rejected** — returned wedding/romance pink palette, script fonts and a testimonials-carousel landing pattern (off-target; testimonials conflict with the no-fabricated-proof rule).
+- Query 2 (one retry, narrower) `"project management task board dashboard productivity SaaS" --design-system --density 7`: **accepted as direction** — Flat Design style (clean, no heavy shadows, 150–200 ms transitions); teal primary + orange action accent; Plus Jakarta Sans ("SaaS, dashboards, B2B, productivity"); pattern "Product Demo + Features". Its "Pre-Delivery Checklist" (SVG icons not emoji, `cursor-pointer`, visible focus, reduced motion, 375/768/1024/1440) is adopted.
+- Targeted: `--domain ux` keyboard/focus → visible focus on every control, tab order = visual order; `--stack nextjs` → App Router, Server Components by default, minimal `'use client'`.
+- Not adopted: Bebas Neue/all-caps display (typography guidance in `frontend-design` avoids all-caps labels).
+- Where results differ from the brief, the brief wins: warm neutral workspace and deep-green primary are kept; search teal/orange informs hue family only. Density dial 7 ≈ standard-dense operational UI.
+- Display face for the landing hero is my choice (Bricolage Grotesque), **not** a search result.
+
 Concept: **"Event production desk"** — a printed run sheet crossed with a stage manager's cue board. Signature motif: a **date/status "cue tab"** (compact date block + status chip) reused on events, tasks, schedule entries and the landing preview.
-- **Tokens (proposed; contrast to be measured in Phase 1, not assumed):** paper `#F5F2EC` workspace, surface `#FFFFFF`, ink `#1B1F1D`, deep green primary `#0F5C45`, vivid accent (signal coral) `#E4572E`, rule `#D9D4C8`, status colours paired with text/icon. Avoid the generic cream+terracotta+serif "AI default"; tune in Phase 1 against the brief after contrast checks.
+- **Tokens (implemented in `src/app/globals.css`; 21 text/control pairs measured by `npm run contrast`, all pass):** paper `#F3F2EE` (warm neutral, slightly cooler than cream to avoid the cream+terracotta default), surface `#FFFFFF`, ink `#16201C`, secondary ink `#46524C`, deep green primary `#0B5D4B`, "stage-light" accent `#FFC23D` (fills only, always with ink text), control border `#7D7B6F`, status tones info/success/warn/danger with tinted backgrounds. Status chips differ by shape and always show a text label.
+- **Fonts:** Plus Jakarta Sans (UI, from the search) and Bricolage Grotesque (display: landing headings, date digits), both self-hosted via `next/font`.
 - **Type:** distinctive display face (landing only, sparingly) + clear sans for operational UI; tabular numerals for money; robust system fallbacks. Self-host or `next/font` (no external image dependency).
 - Tokens as CSS variables for colour, spacing, type, border, radius, shadow, motion. `prefers-reduced-motion` honoured; no hover-only controls.
 - Illustrations/screenshots: original CSS/SVG only.
@@ -325,7 +344,7 @@ Conventions: UUID PKs (`gen_random_uuid()`), `created_at`/`updated_at timestampt
 | Workspace settings, plan/upgrade, delete workspace | ✔ | ✘ | ✘ |
 Self-promotion and removing/demoting the last owner are rejected in SQL. Members are added by **existing registered account email** (no email-invitation service in MVP).
 
-**Tenant isolation / RLS.** RLS enabled on every table. Helper `is_member(workspace_id)`/`has_role(workspace_id, roles[])`. Policies: select for members; writes per matrix; event-child tables resolve workspace via event. Cross-workspace linked IDs (assignee, supplier, venue, quote) blocked by triggers/RPC. Aggregates and print/summary queries run as the user (RLS applies); no service key in app request paths. **Demo:** each visitor gets a disposable anonymous-auth workspace seeded from a template RPC (fictional data only); editable copy is isolated; reset recreates it; demo never uses admin key client-side. [ASM: Supabase anonymous sign-ins must be enabled by the founder; fallback is sign-up then "Load demo".]
+**Tenant isolation / RLS.** RLS enabled on every table. Helper `is_member(workspace_id)`/`has_role(workspace_id, roles[])`. Policies: select for members; writes per matrix; event-child tables resolve workspace via event. Cross-workspace linked IDs (assignee, supplier, venue, quote) blocked by triggers/RPC. Aggregates and print/summary queries run as the user (RLS applies); no service key in app request paths. **Demo:** the public `/demo` is read-only and renders a fixed fictional dataset with no database write and no session. A signed-in user can run a "Load demo data" RPC that copies a fictional template into **their own** workspace (isolated by RLS like any workspace); "Reset demo" recreates only that copy. The demo never uses an admin key client-side. Anonymous sign-ins are deferred (founder decision 2).
 
 **Privacy & deletion.** Plain-language `/privacy`; collection notice beside forms collecting personal data (guest names/contacts: advise fictional/minimal); consent timestamp stored **only** where consent is requested (none planned), distinct from notice acknowledgement. Account deletion: blocked while user is sole owner of a workspace with other members until ownership is transferred or workspace deleted; otherwise deletes profile and memberships; authored notes/tasks set null. No analytics/advertising cookies; only essential auth session cookies explained. Retention: demo workspaces purged after a documented period [ASM, e.g., 7 days]. Statement: privacy design review items (GDPR Art. 17, HK PDPO) are design requirements, **not** legal certification.
 

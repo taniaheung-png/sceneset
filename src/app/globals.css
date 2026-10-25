@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/*
+ * SceneSet design tokens — "event production desk".
+ * One light theme only (dark-mode switching is out of MVP scope).
+ * Every text/background pair used in the UI is checked by `npm run contrast`.
+ */
+:root {
+  color-scheme: light;
+
+  /* Colour */
+  --paper: #f3f2ee; /* workspace background (warm neutral) */
+  --surface: #ffffff; /* cards, tables, inputs */
+  --sunken: #e8e6df; /* table headers, wells */
+  --ink: #16201c; /* primary text */
+  --ink-2: #46524c; /* secondary text */
+  --rule: #d4d1c6; /* decorative dividers */
+  --control: #7d7b6f; /* input/button borders (>=3:1 on paper & surface) */
+  --primary: #0b5d4b; /* deep green: main actions */
+  --primary-hover: #084538;
+  --on-primary: #ffffff;
+  --primary-tint: #dcebe5; /* selected nav, soft fills */
+  --cue: #ffc23d; /* stage-light accent: fills only, always with ink text */
+  --danger: #b42318;
+  --danger-tint: #fbe4e1;
+  --info: #1d4ed8;
+  --info-tint: #dfe8fc;
+  --success: #0b6b3a;
+  --success-tint: #d9efe2;
+  --warn-ink: #7a4a00;
+  --warn-tint: #fdebc2;
+
+  /* Type */
+  --text-xs: 0.8125rem; /* 13px: metadata only */
+  --text-sm: 0.875rem; /* 14px: dense tables/boards */
+  --text-base: 1rem; /* 16px: body */
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-hero: clamp(2.25rem, 5vw + 0.5rem, 4.25rem);
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --sidebar-w: 15rem;
+  --touch: 2.75rem; /* 44px */
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-rule: var(--rule);
+  --color-control: var(--control);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-primary-tint: var(--primary-tint);
+  --color-cue: var(--cue);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --color-info: var(--info);
+  --color-info-tint: var(--info-tint);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-tint: var(--warn-tint);
+  --font-sans: var(--font-ui), system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-display), var(--font-ui), system-ui, sans-serif;
+}
+
+/* Shape & depth: static so the variables exist for plain CSS (print, focus ring). */
+@theme static {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --shadow-1: 0 1px 2px rgb(22 32 28 / 0.08);
+  --shadow-2: 0 6px 20px rgb(22 32 28 / 0.12);
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Money and counts line up in columns. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible focus on every interactive control (WCAG 2.2). */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+button,
+a,
+select,
+summary,
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
