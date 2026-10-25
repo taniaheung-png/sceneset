@@ -71,17 +71,17 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 
 ## Phase 4 — Suppliers, quotes, budget  (R10–R12)
 
-- [ ] **P4.1** (R10) Supplier directory CRUD (workspace-level, fictional). Gate: restrict delete when quotes exist, shows message.
-- [ ] **P4.2** (R10, R16) Supplier category filter/search. Gate: reset + no-results.
-- [ ] **P4.3** (R11) Quote create/edit per event with supplier, amount, scope, status. Gate: persists; cross-workspace supplier forged ID rejected.
-- [ ] **P4.4** (R11) Quote comparison table grouped by category; shortlist/accept actions. Gate: ≥2 quotes shown side by side; only authorised roles act.
-- [ ] **P4.5** (R12) Budget item CRUD with category, planned, committed, paid. Gate: invalid (negative, paid>committed) rejected.
-- [ ] **P4.6** (R12) Totals panel (planned, committed, paid, outstanding, remaining, variance) with sign explanation. Gate: unit checks incl. empty/zero/over-budget/rounding.
-- [ ] **P4.7** (R12) Accept quote → link to budget item via idempotent RPC (create or choose item). Gate: double-click / repeat creates no duplicate and no double count.
-- [ ] **P4.8** (R12, R16) Budget category filter; filtered view labels that totals are filtered vs overall. Gate: unfiltered totals unchanged.
-- [ ] **P4.9** (R12) Stale-update check on budget item edit. Gate: two-tab conflict message.
-- [ ] **P4.10** (R07) Dashboard budget summary + over-budget warning linking to Budget. Gate: matches Budget totals.
-- [ ] **P4.11** Phase 4 gate: permissions (collaborator denied), persistence, recalculation; update `docs/QA.md`; BUILD/TYPE/LINT. Checkpoint report.
+- [x] **P4.1** (R10) Supplier directory CRUD (workspace-level, fictional). Gate: restrict delete when quotes exist, shows message. *Verified in browser (`npm run test:e2e:p4`, supplier steps) 2026-10-26: add, edit, delete; a supplier with quotes cannot be deleted and the message says why.*
+- [x] **P4.2** (R10, R16) Supplier category filter/search. Gate: reset + no-results. *Verified in browser: search, category filter, clear and no-results states.*
+- [x] **P4.3** (R11) Quote create/edit per event with supplier, amount, scope, status. Gate: persists; cross-workspace supplier forged ID rejected. *Verified: quotes persist after reload and edit; invalid amounts keep typed values including the chosen supplier; a forged other-workspace supplier is rejected by the database (`test:remote`).*
+- [x] **P4.4** (R11) Quote comparison table grouped by category; shortlist/accept actions. Gate: ≥2 quotes shown side by side; only authorised roles act. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
+- [x] **P4.5** (R12) Budget item CRUD with category, planned, committed, paid. Gate: invalid (negative, paid>committed) rejected. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
+- [x] **P4.6** (R12) Totals panel (planned, committed, paid, outstanding, remaining, variance) with sign explanation. Gate: unit checks incl. empty/zero/over-budget/rounding. *Verified by unit checks (`npm test`, tests/budget.test.mjs: empty, zero target, over budget, exact integer sums, rounding, sign wording).*
+- [x] **P4.7** (R12) Accept quote → link to budget item via idempotent RPC (create or choose item). Gate: double-click / repeat creates no duplicate and no double count. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
+- [x] **P4.8** (R12, R16) Budget category filter; filtered view labels that totals are filtered vs overall. Gate: unfiltered totals unchanged. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
+- [x] **P4.9** (R12) Stale-update check on budget item edit. Gate: two-tab conflict message. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
+- [x] **P4.10** (R07) Dashboard budget summary + over-budget warning linking to Budget. Gate: matches Budget totals. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
+- [x] **P4.11** Phase 4 gate: permissions (collaborator denied), persistence, recalculation; update `docs/QA.md`; BUILD/TYPE/LINT. Checkpoint report. *Verified 2026-10-26 on the dev project: `npm run test:e2e:p4` 27/27 (role-isolated browsers) and `npm run test:remote` 84/84; `npm test` 65/65. Migration 005 applied.*
 
 ## Phase 5 — Guests and run of show  (R13, R14)
 

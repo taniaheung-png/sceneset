@@ -30,6 +30,30 @@ export type TaskRow = {
   updated_at: string;
 };
 
+export type SupplierRow = { id: string; name: string; category: string; contact_note: string; notes: string; updated_at: string };
+
+export type QuoteRow = {
+  id: string;
+  supplier_id: string;
+  amount_minor: number;
+  scope: string;
+  status: "requested" | "shortlisted" | "accepted" | "rejected";
+  notes: string;
+  updated_at: string;
+  suppliers: { id: string; name: string; category: string } | null;
+};
+
+export type BudgetRow = {
+  id: string;
+  category: string;
+  name: string;
+  planned_minor: number;
+  committed_minor: number;
+  paid_minor: number;
+  quote_id: string | null;
+  updated_at: string;
+};
+
 export type NoteRow = { id: string; body: string; author_id: string | null; created_at: string; updated_at: string };
 
 export type MemberRow = { user_id: string; display_name: string; role: string; email: string | null };

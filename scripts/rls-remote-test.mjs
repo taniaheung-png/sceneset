@@ -146,6 +146,46 @@ try {
   expectDenied("entitlement log cannot be written by clients", await owner.db.from("entitlement_events").insert({ workspace_id: ws, plan: "organiser", outcome: "success", idempotency_key: `k-${run}` }), "42501");
   expectEmpty("non-owner sees no entitlement log", await organiser.db.from("entitlement_events").select("*").eq("workspace_id", ws));
 
+  // --- accept quote -> budget line (migration 005) on the real database
+  const evAcc = evId;
+  const q2 = await ins("quotes", { event_id: evAcc, supplier_id: sup.data?.id, amount_minor: 250050, status: "shortlisted" }).select("id").single();
+  expectDenied("a quote cannot be created directly as accepted", await ins("quotes", { event_id: evAcc, supplier_id: sup.data?.id, amount_minor: 1, status: "accepted" }), "42501");
+  expectDenied("a quote cannot be set to accepted directly", await organiser.db.from("quotes").update({ status: "accepted" }).eq("id", q2.data?.id), "42501");
+  expectDenied("collaborator cannot accept a quote", await collab.db.rpc("accept_quote", { quote: q2.data?.id }), "42501");
+  expectDenied("outsider cannot accept a quote", await outsider.db.rpc("accept_quote", { quote: q2.data?.id }), "42501");
+  const burst = await Promise.all(Array.from({ length: 6 }, () => organiser.db.rpc("accept_quote", { quote: q2.data?.id })));
+  record("six concurrent accepts all succeed", burst.every((r) => !r.error), burst.map((r) => r.error?.code).join(","));
+  record("...and all return the same budget line", new Set(burst.map((r) => r.data)).size === 1);
+  const linkedRows = await admin.from("budget_items").select("id, planned_minor, committed_minor, paid_minor").eq("quote_id", q2.data?.id);
+  record("exactly one line is linked, with the quote amount counted once", linkedRows.data?.length === 1 && linkedRows.data[0].committed_minor === 250050 && linkedRows.data[0].paid_minor === 0, JSON.stringify(linkedRows.data));
+  const lineId = linkedRows.data?.[0]?.id;
+  expectDenied("accepted line: committed amount is locked", await organiser.db.from("budget_items").update({ committed_minor: 1 }).eq("id", lineId), "P0001");
+  record("accepted line: planned and paid stay editable", !(await organiser.db.from("budget_items").update({ planned_minor: 300000, paid_minor: 10000 }).eq("id", lineId)).error);
+  expectDenied("accepted quote: amount is locked", await organiser.db.from("quotes").update({ amount_minor: 1 }).eq("id", q2.data?.id), "P0001");
+  expectDenied("collaborator cannot re-open", await collab.db.rpc("reopen_quote", { quote: q2.data?.id }), "42501");
+  record("organiser re-opens the quote", !(await organiser.db.rpc("reopen_quote", { quote: q2.data?.id })).error);
+  const afterReopen = await admin.from("budget_items").select("quote_id, committed_minor").eq("id", lineId).single();
+  record("re-open keeps the line (unlinked, amounts kept)", afterReopen.data?.quote_id === null && afterReopen.data?.committed_minor === 250050);
+  const q3 = await ins("quotes", { event_id: evAcc, supplier_id: sup.data?.id, amount_minor: 90000 }).select("id").single();
+  record("a quote can be linked to an existing line, replacing its committed amount", !(await organiser.db.rpc("accept_quote", { quote: q3.data?.id, into_item: lineId })).error
+    && (await admin.from("budget_items").select("committed_minor, quote_id").eq("id", lineId).single()).data?.committed_minor === 90000);
+  expectDenied("linking a different quote to a linked line is refused", await organiser.db.rpc("accept_quote", { quote: q2.data?.id, into_item: lineId }), "P0002");
+  // a failed accept must leave every record exactly as it was (paid > quote amount would break paid <= committed)
+  const paidLine = await ins("budget_items", { event_id: evAcc, category: "Decor", name: "Mostly paid", planned_minor: 100000, committed_minor: 100000, paid_minor: 80000 }).select("id").single();
+  const q4 = await ins("quotes", { event_id: evAcc, supplier_id: sup.data?.id, amount_minor: 50000, status: "shortlisted" }).select("id").single();
+  const lineBefore = (await admin.from("budget_items").select("*").eq("id", paidLine.data?.id).single()).data;
+  expectDenied("accepting into a line already paid more than the quote is refused", await organiser.db.rpc("accept_quote", { quote: q4.data?.id, into_item: paidLine.data?.id }), "23514");
+  const lineAfter = (await admin.from("budget_items").select("*").eq("id", paidLine.data?.id).single()).data;
+  const q4After = (await admin.from("quotes").select("status").eq("id", q4.data?.id).single()).data;
+  record("...and nothing changed: line identical, quote still shortlisted, no new line", JSON.stringify(lineBefore) === JSON.stringify(lineAfter) && q4After.status === "shortlisted"
+    && (await admin.from("budget_items").select("id", { count: "exact", head: true }).eq("quote_id", q4.data?.id)).count === 0);
+  record("accepting a quote never leaves paid above committed (new line starts at paid 0)", (await organiser.db.rpc("accept_quote", { quote: q4.data?.id })).error === null
+    && (await admin.from("budget_items").select("paid_minor, committed_minor").eq("quote_id", q4.data?.id).single()).data?.paid_minor === 0);
+  const noPaidAbove = await admin.from("budget_items").select("id, paid_minor, committed_minor").eq("event_id", evAcc);
+  record("no budget line on the event has paid above committed", (noPaidAbove.data ?? []).every((l) => l.paid_minor <= l.committed_minor));
+  record("deleting a linked line puts its quote back to shortlisted", !(await organiser.db.from("budget_items").delete().eq("id", lineId)).error
+    && (await admin.from("quotes").select("status").eq("id", q3.data?.id).single()).data?.status === "shortlisted");
+
   // deleting an event removes its owned children (checked with the admin client, which bypasses RLS)
   const ev3 = await organiser.db.from("events").insert({ workspace_id: ws, title: "To delete", starts_at: start, ends_at: end }).select("id").single();
   await organiser.db.from("tasks").insert({ workspace_id: ws, event_id: ev3.data?.id, title: "child task" });

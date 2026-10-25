@@ -328,6 +328,7 @@ Conventions: UUID PKs (`gen_random_uuid()`), `created_at`/`updated_at timestampt
 - Outstanding = committed − paid.
 - Remaining against commitment = budget target − committed (negative ⇒ over budget).
 - Variance = committed − planned (positive ⇒ spending above plan).
+- **Quote → budget (phase 4, migration 005):** `accept_quote(quote, into_item?)` is the only way a quote becomes `accepted`. It creates one budget line (name and category from the supplier; planned = committed = quote amount; paid 0) or fills an existing unlinked line on the same event, **replacing** that line's committed amount with the quote amount. Repeating it returns the same line and changes nothing, including under concurrent clicks (quote row locked; `budget_items.quote_id` UNIQUE). While accepted, the quote's status/amount/supplier and the line's committed amount are locked; `reopen_quote()` unlinks but keeps the line; deleting a linked line returns its quote to `shortlisted`. Totals sum budget lines only, never quotes, so nothing is counted twice. Supplier and budget categories share one list (`BUDGET_CATEGORIES`). With no budget target (0), "remaining" is shown as "Not set" and spending is never called over budget.
 - Zero/empty budgets show 0 and no percentage (no divide-by-zero).
 
 **Role matrix [ASM, changeable]**

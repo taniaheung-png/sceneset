@@ -47,4 +47,9 @@ const t = await get("/rest/v1/workspaces?select=id&limit=1");
 // With migrations applied the anon role has no table privilege (42501). Before: table missing (PGRST205).
 const applied = t.body.code === "42501" || t.status === 200;
 check(applied, applied ? "migrations applied (workspaces table exists and anon is denied)" : `migrations NOT applied yet (${t.body.code ?? t.status})`);
+// Migration 005 adds accept_quote(). With it present, anon is denied (42501); without it PostgREST says it cannot find it (PGRST202).
+const rpc = await fetch(`${url}/rest/v1/rpc/accept_quote`, { method: "POST", headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify({ quote: "00000000-0000-0000-0000-000000000000" }) });
+const rpcBody = await rpc.json().catch(() => ({}));
+const has005 = rpcBody.code === "42501";
+check(has005, has005 ? "migration 005 applied (accept_quote exists)" : `migration 005 NOT applied yet (${rpcBody.code ?? rpc.status}). Run: npm run db:bundle -- 5, then paste supabase/_bundle.sql in the SQL Editor`);
 process.exit(bad ? 1 : 0);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Banner } from "@/components/site/AuthShell";
 import { ButtonLink } from "@/components/ui/Button";
 import { StatusChip } from "@/components/ui/StatusChip";
+import { type BudgetLine, budgetTotals, percent } from "@/lib/budget";
 import { getEvent, getMembers } from "@/lib/events";
 import { formatMinor } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
@@ -19,10 +20,17 @@ export default async function EventDashboard({ params, searchParams }: PageProps
   const sp = await searchParams;
   const { event } = await getEvent(ws, ev);
   const supabase = await createClient();
-  const [{ data }, members] = await Promise.all([
+  const [{ data }, members, bud, quo] = await Promise.all([
     supabase.from("tasks").select("id, title, status, due_on, assignee_id, priority").eq("event_id", ev),
     getMembers(ws),
+    supabase.from("budget_items").select("planned_minor, committed_minor, paid_minor").eq("event_id", ev),
+    supabase.from("quotes").select("status").eq("event_id", ev),
   ]);
+  // Same function and same rows as the Budget page, so the dashboard can never disagree with it.
+  const totals = budgetTotals((bud.data ?? []) as BudgetLine[], event.budget_target_minor);
+  const quoteCount = (s: string) => (quo.data ?? []).filter((x) => x.status === s).length;
+  const undecided = quoteCount("requested") + quoteCount("shortlisted");
+  const money = (n: number) => formatMinor(n, event.currency);
   const tasks = (data ?? []) as Pick<TaskRow, "id" | "title" | "status" | "due_on" | "assignee_id" | "priority">[];
 
   // Every number below is derived from saved rows. shortcut: fetches all tasks; switch to count queries beyond ~1,000 tasks.
@@ -40,6 +48,13 @@ export default async function EventDashboard({ params, searchParams }: PageProps
   return (
     <>
       {flash && <Banner tone="info">{flash}</Banner>}
+
+      {totals.over && totals.remaining !== null && (
+        <p role="alert" className="flex flex-wrap items-center gap-3 rounded-md bg-danger-tint p-3 text-sm font-medium text-danger">
+          Over budget by {money(-totals.remaining)}.
+          <Link href={`${base}/budget`} className="font-semibold underline">Review the budget</Link>
+        </p>
+      )}
 
       {overdue.length > 0 && (
         <p role="alert" className="flex flex-wrap items-center gap-3 rounded-md bg-danger-tint p-3 text-sm font-medium text-danger">
@@ -94,11 +109,42 @@ export default async function EventDashboard({ params, searchParams }: PageProps
         </section>
       </div>
 
+      <section aria-labelledby="d-budget" className={card}>
+        <h2 id="d-budget" className="text-lg font-bold">Budget</h2>
+        {!totals.hasTarget && (bud.data ?? []).length === 0 ? (
+          <>
+            <p className="mt-2 text-ink-2">No budget lines or target yet.</p>
+            <div className="mt-3"><ButtonLink href={`${base}/budget`} variant="secondary">Open the budget</ButtonLink></div>
+          </>
+        ) : (
+          <>
+            <dl className="num mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-5">
+              {[
+                ["Target", totals.hasTarget ? money(event.budget_target_minor) : "Not set"],
+                ["Committed", money(totals.committed)],
+                ["Paid", money(totals.paid)],
+                ["Outstanding", money(totals.outstanding)],
+                [totals.over ? "Over budget by" : "Remaining", totals.remaining === null ? "Not set" : money(Math.abs(totals.remaining))],
+              ].map(([l, v]) => (
+                <div key={l}><dt className="text-ink-2">{l}</dt><dd className={`text-lg font-bold ${l === "Over budget by" ? "text-danger" : ""}`}>{v}</dd></div>
+              ))}
+            </dl>
+            {totals.hasTarget && <p className="num mt-2 text-sm text-ink-2">{percent(totals.committed, event.budget_target_minor)}% of the target is committed.</p>}
+          </>
+        )}
+        <p className="mt-3 text-sm">
+          {quoteCount("accepted")} quote{quoteCount("accepted") === 1 ? "" : "s"} accepted, {undecided} awaiting a decision.{" "}
+          <Link href={`${base}/suppliers`} className="font-semibold text-primary underline">Compare quotes</Link>
+          {" · "}
+          <Link href={`${base}/budget`} className="font-semibold text-primary underline">Open the budget</Link>
+        </p>
+      </section>
+
       <section aria-labelledby="d-later" className={`${card} bg-sunken`}>
         <h2 id="d-later" className="text-lg font-bold">Coming in later phases</h2>
         <p className="mt-1 text-sm text-ink-2">
-          Budget and suppliers, guests, running order, venue layout and the readiness check are not built yet, so this
-          dashboard shows no figures for them rather than placeholders.
+          Guests, running order, venue layout and the readiness check are not built yet, so this dashboard shows no
+          figures for them rather than placeholders.
         </p>
       </section>
     </>

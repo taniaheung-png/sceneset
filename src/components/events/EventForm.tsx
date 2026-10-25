@@ -26,11 +26,14 @@ export function EventForm({
   cancelHref: string;
 }) {
   const [state, action] = useActionState(saveEvent, {} as EventFormState);
+  // A <select>'s defaultValue is not re-read when React resets the form after a failed submit, so remount the form
+  // whenever the server hands back new values/errors; otherwise chosen options would silently revert.
+  const formKey = JSON.stringify([state.values, state.errors, state.error]);
   const v = (k: string) => state.values?.[k] ?? initial[k] ?? "";
   const e = state.errors ?? {};
 
   return (
-    <form action={action} className="flex max-w-3xl flex-col gap-5" noValidate>
+    <form key={formKey} action={action} className="flex max-w-3xl flex-col gap-5" noValidate>
       <input type="hidden" name="ws" value={ws} />
       {ev && <input type="hidden" name="ev" value={ev} />}
       {version && <input type="hidden" name="version" value={version} />}

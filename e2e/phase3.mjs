@@ -103,6 +103,7 @@ try {
   // -------------------------------------------------------------------- events (P3.1 - P3.6)
   await step("event form: invalid input shows field errors and keeps everything typed", async () => {
     await open(owner, `/w/${ws}/events/new`);
+    await owner.getByLabel("Type").selectOption("Party");
     await owner.getByLabel("Event title").fill("   ");
     await owner.getByLabel("Goals").fill("Sell out the night market");
     await owner.getByLabel("Starts").fill("2026-11-14T15:00");
@@ -115,6 +116,7 @@ try {
     assert((await owner.getByLabel("Goals").inputValue()) === "Sell out the night market", "goals lost");
     assert((await owner.getByLabel("Budget target").inputValue()) === "-5", "budget lost");
     assert((await owner.getByLabel("Starts").inputValue()) === "2026-11-14T15:00", "start lost");
+    assert((await owner.getByLabel("Type").inputValue()) === "Party", "chosen type reverted after the error");
   });
   await step("creating an event with an overnight end, a new venue, capacity and budget works", async () => {
     await owner.getByLabel("Event title").fill("Harbour Night Market");

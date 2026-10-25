@@ -46,7 +46,7 @@ export default async function EventLayout({ children, params }: LayoutProps<"/w/
       )}
       <EventTabs
         base={base}
-        items={[{ slug: "", label: "Dashboard" }, { slug: "tasks", label: "Tasks and notes" }, ...(canManage ? [{ slug: "edit", label: "Edit event" }] : [])]}
+        items={[{ slug: "", label: "Dashboard" }, { slug: "tasks", label: "Tasks and notes" }, { slug: "suppliers", label: "Suppliers and quotes" }, { slug: "budget", label: "Budget" }, ...(canManage ? [{ slug: "edit", label: "Edit event" }] : [])]}
       />
       {children}
     </>

@@ -12,6 +12,13 @@ export function formatMinor(minor: number, currency: string): string {
   }).format(minor / 100);
 }
 
+/** Minor units as an editable input value: "" for 0, "1250" for whole amounts, "1250.50" otherwise. */
+export function toMajorInput(minor: number): string {
+  if (minor === 0) return "";
+  const whole = Math.trunc(minor / 100);
+  return minor % 100 === 0 ? String(whole) : `${whole}.${String(minor % 100).padStart(2, "0")}`; // string math: no float rounding
+}
+
 /**
  * Parses user input such as "1,234.56", "12" or "12.5" into integer minor units.
  * Returns null for anything else: negatives, more than 2 decimals, text, empty, or values too large to be exact.

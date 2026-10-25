@@ -89,6 +89,37 @@ Cleanup: the run's workspace and 4 test users deleted; dev project verified at 0
 
 **Known limitations / unchecked:** screen-reader behaviour; real-device touch; the dashboard fetches all tasks of an event (fine at prototype scale, count queries beyond ~1,000 tasks); timezone list is a short fixed list; DST-gap local times pick one valid instant without warning; email-dependent Phase 2 gates (P2.13, P2.15, P2.16) remain deferred.
 
+## Phase 4 — Suppliers, quotes, budget (verified 2026-10-26)
+
+**What exists:** supplier directory (workspace-wide) with search and category filter; per-event quote comparison grouped by category with the lowest marked; shortlist, reject, accept, re-open; accepted quote becomes exactly one budget line via the idempotent `accept_quote()` RPC (migration `20261026000005_accept_quote.sql`); budget lines with planned, committed and paid amounts; labelled totals (planned, committed, paid, outstanding, remaining against target, variance) with sign wording; filtered vs overall totals; over-budget state; stale-edit protection; dashboard budget summary built from the same function and rows as the Budget page.
+
+**Design rules enforced in the database, not only the UI:** a quote can become `accepted` only through `accept_quote()`; repeating it returns the same line and changes nothing (the quote row is locked first, and `budget_items.quote_id` is UNIQUE); linking to an existing line REPLACES its committed amount with the quote amount; while accepted, the quote's amount/supplier/status and the line's committed amount are locked; `reopen_quote()` unlinks but keeps the line; deleting a linked line puts the quote back to shortlisted. Spending is counted once because totals sum budget lines only, never quotes.
+
+| Check | Result (2026-10-26) |
+|---|---|
+| `npm test` (unit + local SQL on PGlite) | **65/65**: adds 15 budget/amount/form tests and 11 accept/re-open/idempotency/lock tests on the real migration SQL |
+| lint, typecheck | pass |
+| `npm run test:e2e` (phase 2 regression) | 17/17 |
+| `npm run test:e2e:p3` (phase 3 regression, plus new check that a chosen select survives a failed submit) | 25/25 |
+| `npm run test:e2e:p4` against the dev project, **before** migration 005 | 12/26: supplier directory, filters, quote form errors, three quotes grouped with lowest marked, delete-blocked message, shortlist/reject persistence and quote stale-edit **pass**; every step that accepts a quote fails because `accept_quote` does not exist yet, and later steps cascade from that |
+| `npm run check:env` | reports **migration 005 NOT applied (PGRST202)** |
+| `npm run test:remote` | superseded: 84/84 after the migration, see below |
+
+**Bug found and fixed:** after a failed submit React resets the form and a `<select>` returns to its original option (a select's `defaultValue` is not re-read), so the chosen supplier, event type, timezone, currency, status or venue was silently lost while text fields were kept. The event, quote and budget forms now remount when the server returns new values or errors; phase 3 and 4 browser tests assert the chosen option survives.
+
+**Status:** migration 005 was applied by the founder and every Phase 4 task now passes; see the verification below. (The 12/26 run above is the earlier pre-migration run, kept as history.)
+
+
+### Phase 4 verification after migration 005 was applied (2026-10-26)
+- `npm run check:env`: all ok, **migration 005 applied**.
+- `npm run test:remote`: **84/84** on the real dev project (adds: direct accepted status refused; collaborator and outsider cannot accept or re-open; **six concurrent accepts return one line with the amount counted once**; committed, quote amount and status locked while accepted; planned and paid stay editable; re-open keeps the line; link into an existing line replaces its committed amount; linking a different quote to a linked line refused; deleting a linked line returns its quote to shortlisted; **accepting into a line already paid more than the quote is refused and leaves the line, the quote and the line count identical**; no line ever has paid above committed; event delete cascades to tasks, notes and guests).
+- `npm run test:e2e:p4`: **27/27** (role-isolated Chromium). Covers supplier CRUD, search, filters and the in-use delete message; quote errors that keep typed values and the chosen supplier; side-by-side comparison with the lowest marked; shortlist and reject; stale quote edit refused; **accept creates exactly one line and a double click sends a single request**; accepted quote offers Re-open, not Accept or edit; **accepting into an existing line replaces its committed amount**; exact totals (planned 6,200.50, committed 5,700.50, paid 1,000, outstanding 4,700.50, remaining 4,299.50, variance -500 "Below plan"); invalid amounts rejected with typed values kept and nothing saved; quote-linked line has a read-only committed amount; stale line edit refused; over budget by HKD 1,700.50 on the budget page and dashboard, then restored after deleting the line; category filter leaves overall totals unchanged and labels the filtered panel; dashboard numbers equal the Budget page; re-open then re-accept into the same line gives one line and identical totals; deleting a linked line returns its quote to Shortlisted; **a refused accept (line already paid 900 vs a quote of 800) leaves line, quote and totals unchanged**; collaborator sees everything read-only; empty event with no target shows zeros, "Not set", never NaN or "over budget"; no budget or quote leakage across events; outsiders get "Page not found"; totals unchanged after sign-out and sign-in.
+- Regression after the form fix: `test:e2e` (phase 2) 17/17, `test:e2e:p3` 25/25, `npm test` 65/65. Lint, typecheck and production build pass.
+- Test-only issues found and fixed (not product bugs): a click racing a re-render, a stale-text match, a wrong expected line count. One real product bug was found earlier and fixed (chosen dropdown option reverting after a failed submit).
+- Cleanup: the dev project holds 0 users, workspaces, events, suppliers, quotes and budget lines after the runs. Existing data: none existed.
+- **Still deferred and unticked:** Phase 2 email checks P2.13, P2.15, P2.16.
+**Not checked:** screen-reader behaviour; real-device touch; amounts above about 9 quadrillion minor units (JSON numbers); email-dependent Phase 2 gates (P2.13, P2.15, P2.16) remain deferred.
+
 ## Lessons / unresolved assumptions (Build–Measure–Learn)
 - Phase 1 lesson: UI UX Pro Max's first, broad query returned an off-target (wedding) result; a narrower product-type query was needed. Treat the tool as input, not authority.
 - Unresolved: all desirability/viability assumptions in `PRD.md` §1.1 remain untested.

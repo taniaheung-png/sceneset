@@ -210,6 +210,110 @@ describe("venue layout", () => {
   });
 });
 
+describe("accept quote -> budget line (migration 005)", () => {
+  let sup, ev3;
+  const quoteSql = "insert into public.quotes (workspace_id,event_id,supplier_id,amount_minor,status) values ($1,$2,$3,$4,$5) returning id";
+  const newQuote = async (amount, status = "shortlisted", event = ev1) => (await as(U.bob, quoteSql, [ws1, event, sup, amount, status])).rows[0].id;
+  const committedTotal = async (event = ev1) =>
+    Number((await as(U.bob, "select coalesce(sum(committed_minor),0)::bigint as n from public.budget_items where event_id=$1", [event])).rows[0].n);
+  const itemsFor = async (q) => (await as(U.bob, "select * from public.budget_items where quote_id=$1", [q])).rows;
+  const accept = async (q, into = null) => (await as(U.bob, "select public.accept_quote($1,$2) as item", [q, into]));
+
+  test("setup: a supplier and a second event", async () => {
+    sup = (await as(U.bob, "insert into public.suppliers (workspace_id,name,category) values ($1,'Sound Crew','Sound & lighting') returning id", [ws1])).rows[0].id;
+    ev3 = (await as(U.bob, "insert into public.events (workspace_id,title,starts_at,ends_at) values ($1,'Other event','2026-12-01T10:00Z','2026-12-01T12:00Z') returning id", [ws1])).rows[0].id;
+  });
+  test("a quote cannot be created or set to 'accepted' directly", async () => {
+    denied(await as(U.bob, quoteSql, [ws1, ev1, sup, 5000, "accepted"]), "42501");
+    const q = await newQuote(5000);
+    denied(await as(U.bob, "update public.quotes set status='accepted' where id=$1", [q]), "42501");
+  });
+  test("accepting creates ONE linked line with the quote amount and the supplier's name and category", async () => {
+    const before = await committedTotal();
+    const q = await newQuote(250050);
+    const r = await accept(q);
+    ok(r);
+    const item = (await itemsFor(q))[0];
+    assert.equal(item.id, r.rows[0].item);
+    assert.equal(Number(item.committed_minor), 250050);
+    assert.equal(Number(item.planned_minor), 250050);
+    assert.equal(Number(item.paid_minor), 0);
+    assert.equal(item.name, "Sound Crew");
+    assert.equal(item.category, "Sound & lighting");
+    assert.equal((await as(U.bob, "select status from public.quotes where id=$1", [q])).rows[0].status, "accepted");
+    assert.equal(await committedTotal(), before + 250050);
+  });
+  test("repeating accept is idempotent: same line, no duplicate, total unchanged", async () => {
+    const q = await newQuote(100000);
+    const first = (await accept(q)).rows[0].item;
+    const total = await committedTotal();
+    for (let i = 0; i < 3; i++) assert.equal((await accept(q)).rows[0].item, first);
+    assert.equal((await itemsFor(q)).length, 1);
+    assert.equal(await committedTotal(), total);
+    denied(await accept(q, ev3 /* any uuid that is not the linked line */), "23505");
+  });
+  test("collaborators and outsiders cannot accept or re-open", async () => {
+    const q = await newQuote(7000);
+    denied(await as(U.carol, "select public.accept_quote($1)", [q]), "42501");
+    denied(await as(U.dave, "select public.accept_quote($1)", [q]), "42501");
+    denied(await as(U.carol, "select public.reopen_quote($1)", [q]), "42501");
+    denied(await as(null, "select public.accept_quote($1)", [q]), "42501");
+  });
+  test("a rejected quote cannot be accepted", async () => {
+    denied(await accept(await newQuote(7000, "rejected")), "P0001");
+  });
+  test("linking to an existing line REPLACES its committed amount (no double counting)", async () => {
+    const line = (await as(U.bob, "insert into public.budget_items (workspace_id,event_id,category,name,planned_minor,committed_minor,paid_minor) values ($1,$2,'Decor','Banners',100000,120000,0) returning id", [ws1, ev1])).rows[0].id;
+    const before = await committedTotal();
+    const q = await newQuote(90000);
+    ok(await accept(q, line));
+    const row = (await as(U.bob, "select planned_minor, committed_minor, quote_id from public.budget_items where id=$1", [line])).rows[0];
+    assert.equal(Number(row.committed_minor), 90000);
+    assert.equal(Number(row.planned_minor), 100000);
+    assert.equal(row.quote_id, q);
+    assert.equal(await committedTotal(), before - 120000 + 90000);
+  });
+  test("linking fails (and changes nothing) if already paid more than the quote, or the line is elsewhere", async () => {
+    const line = (await as(U.bob, "insert into public.budget_items (workspace_id,event_id,category,name,planned_minor,committed_minor,paid_minor) values ($1,$2,'Decor','Paid up',100000,100000,80000) returning id", [ws1, ev1])).rows[0].id;
+    const q = await newQuote(50000);
+    denied(await accept(q, line), "23514");
+    assert.equal((await as(U.bob, "select status from public.quotes where id=$1", [q])).rows[0].status, "shortlisted");
+    const other = (await as(U.bob, "insert into public.budget_items (workspace_id,event_id,category,name) values ($1,$2,'Decor','Other event line') returning id", [ws1, ev3])).rows[0].id;
+    denied(await accept(q, other), "P0002");
+  });
+  test("while accepted: committed amount, quote amount, supplier and status are locked; planned and paid are not", async () => {
+    const q = await newQuote(60000);
+    const line = (await accept(q)).rows[0].item;
+    denied(await as(U.bob, "update public.budget_items set committed_minor=1 where id=$1", [line]), "P0001");
+    denied(await as(U.bob, "update public.quotes set amount_minor=1 where id=$1", [q]), "P0001");
+    denied(await as(U.bob, "update public.quotes set status='rejected' where id=$1", [q]), "P0001");
+    ok(await as(U.bob, "update public.budget_items set planned_minor=70000, paid_minor=20000 where id=$1", [line]));
+  });
+  test("re-open unlinks but keeps the line; the quote can be accepted again into that same line", async () => {
+    const q = await newQuote(40000);
+    const line = (await accept(q)).rows[0].item;
+    const total = await committedTotal();
+    ok(await as(U.bob, "select public.reopen_quote($1)", [q]));
+    const row = (await as(U.bob, "select quote_id, committed_minor from public.budget_items where id=$1", [line])).rows[0];
+    assert.equal(row.quote_id, null);
+    assert.equal(Number(row.committed_minor), 40000);
+    assert.equal(await committedTotal(), total);
+    assert.equal((await as(U.bob, "select status from public.quotes where id=$1", [q])).rows[0].status, "shortlisted");
+    ok(await as(U.bob, "update public.budget_items set committed_minor=45000 where id=$1", [line])); // editable again
+    ok(await accept(q, line)); // linking replaces 45000 with the quote's 40000
+    assert.equal((await itemsFor(q)).length, 1);
+    assert.equal(await committedTotal(), total);
+  });
+  test("deleting a linked line puts its quote back to 'shortlisted' so it can be accepted again", async () => {
+    const q = await newQuote(33000);
+    const line = (await accept(q)).rows[0].item;
+    ok(await as(U.bob, "delete from public.budget_items where id=$1", [line]));
+    assert.equal((await as(U.bob, "select status from public.quotes where id=$1", [q])).rows[0].status, "shortlisted");
+    ok(await accept(q));
+    assert.equal((await itemsFor(q)).length, 1);
+  });
+});
+
 describe("deletion", () => {
   test("a member can leave; their assigned tasks become unassigned", async () => {
     ok(await as(U.carol, "select public.remove_member($1,$2)", [ws1, U.carol]));
