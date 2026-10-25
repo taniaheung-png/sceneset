@@ -18,6 +18,7 @@ function keyFor(code: string | undefined): string {
     case "23505": return "exists";
     case "42501": return "forbidden";
     case "22023": return "invalid";
+    case "53400": return "plan-limit";
     default: return "failed";
   }
 }

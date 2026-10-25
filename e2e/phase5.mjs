@@ -4,6 +4,7 @@
 // One isolated browser context per role. Needs the dev server on :3000 and the disposable accounts:
 //   $env:DEV_USERS_PASSWORD = "<printed password>"; npm run test:e2e:p5
 import { chromium } from "playwright";
+import { grantOrganiser } from "./admin.mjs";
 
 const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.DEV_USERS_PASSWORD;
@@ -120,6 +121,7 @@ try {
     await owner.getByRole("button", { name: "Create workspace" }).click();
     await owner.waitForURL(/\/w\/[0-9a-f-]{36}\/events$/);
     ws = /\/w\/([0-9a-f-]{36})\//.exec(owner.url())[1];
+    await grantOrganiser(ws); // plan limits are tested in phase7.mjs; this suite creates several events
     await open(owner, `/w/${ws}/settings`);
     for (const [mail, role] of [[email("organiser"), "organiser"], [email("collaborator"), "collaborator"]]) {
       const form = owner.locator("form:has(input[name=email])");

@@ -34,6 +34,7 @@ export async function saveEvent(_: EventFormState, fd: FormData): Promise<EventF
     const { data: row, error } = await supabase.from("events").insert({ workspace_id: ws, ...data }).select("id").single();
     if (error || !row) {
       if (newVenueId) await supabase.from("venues").delete().eq("id", newVenueId); // best effort: no orphan venue
+      if (error?.code === "53400") return { error: "The free plan allows 1 active event. Archive another event first, or ask the workspace owner to try a test upgrade under Plan.", values: parsed.values };
       return { error: "We could not create the event. Organisers and owners can create events; check your connection and try again.", values: parsed.values };
     }
     revalidatePath(`/w/${ws}/events`);
@@ -89,13 +90,14 @@ async function guardWs(fd: FormData) {
 export async function setArchived(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
   const archive = field(fd, "archive") === "1";
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("events")
     .update({ archived_at: archive ? new Date().toISOString() : null })
     .eq("id", ev)
     .eq("workspace_id", ws)
     .select("id");
   revalidatePath(`/w/${ws}/events`, "layout");
+  if (error?.code === "53400") redirect(`/w/${ws}/events?m=plan-limit`);
   redirect(`/w/${ws}/events?m=${data?.length ? (archive ? "archived" : "unarchived") : "forbidden"}`);
 }
 

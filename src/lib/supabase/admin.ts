@@ -2,8 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { supabaseUrl } from "./config";
 
 /**
- * Server-only client with the secret key, used ONLY for permanently deleting an auth account (the one thing a signed-in
- * user's own key cannot do). Never import this from a client component or put the key in a NEXT_PUBLIC_ variable.
+ * Server-only client with the secret key. Used for two things a signed-in user's own key must not do: permanently deleting
+ * an auth account, and the test-mode plan functions (migration 008), whose on/off switch only the server can read. Never import this from a client component or put the key in a NEXT_PUBLIC_ variable.
  * Returns null when no secret key is configured, so callers can refuse before changing anything.
  */
 export function adminClient() {

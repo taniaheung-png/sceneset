@@ -17,7 +17,7 @@ const SHIM = `
                            raw_user_meta_data jsonb not null default '{}');
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-  grant usage on schema auth, public to anon, authenticated;
+  grant usage on schema auth, public to anon, authenticated, service_role;
   grant execute on function auth.uid() to anon, authenticated;
   -- Supabase grants new public tables to these roles by default; reproduce that so our REVOKEs are tested.
   alter default privileges in schema public grant all on tables to anon, authenticated;
@@ -57,6 +57,8 @@ before(async () => {
   ws2 = (await as(U.dave, "select public.create_workspace('Dave Co') as id")).rows[0].id;
   ok(await as(U.alice, "select public.add_workspace_member($1,'BOB@example.test','organiser')", [ws1]));
   ok(await as(U.alice, "select public.add_workspace_member($1,'carol@example.test','collaborator')", [ws1]));
+  // Earlier suites create many events in these two workspaces; the plan limits (migration 007) are tested on fresh free workspaces.
+  await db.query("update public.workspaces set plan = 'organiser' where id in ($1, $2)", [ws1, ws2]);
 });
 
 describe("anonymous and outsiders", () => {
@@ -454,6 +456,199 @@ describe("venue fit, atomic layout save, sample event, account deletion (migrati
       assert.equal((await db.query("select count(*)::int as n from public.workspaces where id=$1", [ws3])).rows[0].n, 0);
       ok(await db.query("delete from auth.users where id=$1", [frank]));
     });
+  });
+});
+
+describe("sandbox entitlements and plan limits (migrations 007 and 008)", () => {
+  const key = (n) => `key-${n}-0123456789abcdef`; // idempotency keys: 16-64 of [A-Za-z0-9-]
+  const ONE = "2027-01-10T10:00Z", TWO = "2027-01-10T12:00Z";
+  let w, w2, evA, evB, owner, org, extra;
+  // Migration 008: only the server's secret key (service_role) may run these; the verified user id is passed as `actor`.
+  const asService = async (sql, params = []) => {
+    try {
+      return await db.transaction(async (tx) => {
+        await tx.query("set local role service_role");
+        return { rows: (await tx.query(sql, params)).rows };
+      });
+    } catch (e) {
+      return { error: { code: e.code, message: e.message } };
+    }
+  };
+  const checkout = (actor, ws, plan, ev, outcome, k) => asService("select public.sandbox_checkout($1,$2,$3,$4,$5,$6) as r", [actor, ws, plan, ev, outcome, k]);
+  const endPlan = (actor, ws) => asService("select public.sandbox_end_organiser($1,$2) as r", [actor, ws]);
+  const state = async (ws) => (await db.query("select plan, (select count(*)::int from public.events e where e.workspace_id=w.id and e.event_upgrade) as upgraded from public.workspaces w where id=$1", [ws])).rows[0];
+  const logs = async (ws) => (await db.query("select count(*)::int as n from public.entitlement_events where workspace_id=$1", [ws])).rows[0].n;
+  const newEvent = (uid, ws, title) => as(uid, "insert into public.events (workspace_id,title,starts_at,ends_at) values ($1,$2,$3,$4) returning id", [ws, title, ONE, TWO]);
+
+  before(async () => {
+    const mk = async (n) => (await db.query("insert into auth.users (email) values ($1) returning id", [`${n}@example.test`])).rows[0].id;
+    [owner, org, extra] = [await mk("p7owner"), await mk("p7org"), await mk("p7extra")];
+    await mk("p7c1");
+    await mk("p7c2");
+    w = (await as(owner, "select public.create_workspace('Free Co') as id")).rows[0].id;
+    w2 = (await as(extra, "select public.create_workspace('Other Free Co') as id")).rows[0].id;
+    ok(await as(owner, "select public.add_workspace_member($1,'p7org@example.test','organiser')", [w]));
+    evA = (await newEvent(org, w, "First")).rows[0].id;
+  });
+
+  test("a free workspace allows one active event; archived and sample events do not count", async () => {
+    denied(await newEvent(org, w, "Second"), "53400");
+    ok(await as(org, "insert into public.events (workspace_id,title,starts_at,ends_at,archived_at) values ($1,'Old',$2,$3,now())", [w, ONE, TWO]));
+    ok(await as(owner, "select public.reset_demo($1)", [w])); // the sample event is not counted
+    denied(await as(org, "update public.events set archived_at = null where workspace_id=$1 and title='Old'", [w]), "53400");
+    ok(await as(org, "update public.events set title='First, renamed' where id=$1", [evA])); // editing an active event is fine
+    ok(await as(org, "update public.events set archived_at = now() where id=$1", [evA]));
+    evB = (await newEvent(org, w, "Second")).rows[0].id;
+    denied(await as(org, "update public.events set archived_at = null where id=$1", [evA]), "53400"); // restoring would make two active
+  });
+
+  test("a free workspace allows three members; the fourth is refused", async () => {
+    ok(await as(owner, "select public.add_workspace_member($1,'p7c1@example.test','collaborator')", [w]));
+    denied(await as(owner, "select public.add_workspace_member($1,'p7c2@example.test','collaborator')", [w]), "53400");
+    // someone who is already a member is reported as such, not as a plan limit (the member count is exactly at the limit)
+    denied(await as(owner, "select public.add_workspace_member($1,'p7org@example.test','organiser')", [w]), "23505");
+  });
+
+  test("a signed-in user cannot call the sandbox functions through the API at all, even as the owner", async () => {
+    denied(await as(owner, "select public.sandbox_checkout($1,$2,'organiser',null,'success',$3)", [owner, w, key(900)]), "42501");
+    denied(await as(owner, "select public.sandbox_end_organiser($1,$2)", [owner, w]), "42501");
+    denied(await as(null, "select public.sandbox_checkout($1,$2,'organiser',null,'success',$3)", [owner, w, key(901)]), "42501");
+    denied(await as(owner, "select public.sandbox_checkout($1,'organiser',null,'success',$2)", [w, key(902)]), "42883"); // the old 007 signature no longer exists
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 0 });
+    assert.equal(await logs(w), 0);
+  });
+
+  test("clients cannot write the plan, the event upgrade or the log directly", async () => {
+    denied(await as(owner, "update public.workspaces set plan='organiser' where id=$1", [w]), "42501");
+    denied(await as(owner, "update public.events set event_upgrade=true where id=$1", [evB]), "42501");
+    denied(await as(owner, "insert into public.entitlement_events (workspace_id,plan,outcome,idempotency_key) values ($1,'organiser','success','forged-key-0123456789')", [w]), "42501");
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 0 });
+  });
+
+  test("only an owner can run a checkout; anonymous, organiser, collaborator and other workspaces are denied", async () => {
+    const c1 = (await db.query("select id from auth.users where email='p7c1@example.test'")).rows[0].id;
+    denied(await checkout(null, w, "organiser", null, "success", key(1)), "42501");
+    denied(await checkout(org, w, "organiser", null, "success", key(2)), "42501");
+    denied(await checkout(c1, w, "organiser", null, "success", key(3)), "42501");
+    denied(await checkout(extra, w, "organiser", null, "success", key(4)), "42501"); // an owner, but of another workspace
+    denied(await endPlan(org, w), "42501");
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 0 });
+    assert.equal(await logs(w), 0);
+  });
+
+  test("unknown or tampered plan, outcome, key and event are rejected and change nothing", async () => {
+    denied(await checkout(owner, w, "enterprise", null, "success", key(5)), "22023");
+    denied(await checkout(owner, w, "free", null, "success", key(6)), "22023");
+    denied(await checkout(owner, w, "organiser", null, "paid", key(7)), "22023");
+    denied(await checkout(owner, w, "organiser", null, "success", "short"), "22023");
+    denied(await checkout(owner, w, "organiser", null, "success", "has spaces and symbols !!!!!!"), "22023");
+    denied(await checkout(owner, w, "event", null, "success", key(8)), "22023"); // the event plan needs an event
+    denied(await checkout(owner, w, "organiser", evA, "success", key(9)), "22023"); // the organiser plan takes no event
+    const other = (await newEvent(extra, w2, "Theirs")).rows[0].id;
+    denied(await checkout(owner, w, "event", other, "success", key(10)), "P0002"); // an event of another workspace
+    denied(await checkout(owner, w, "event", "00000000-0000-0000-0000-000000000000", "success", key(11)), "P0002");
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 0 });
+    assert.deepEqual(await state(w2), { plan: "free", upgraded: 0 });
+    assert.equal(await logs(w), 0);
+  });
+
+  test("cancelled and failed checkouts are logged and grant nothing", async () => {
+    const c = await checkout(owner, w, "organiser", null, "cancelled", key(20));
+    ok(c);
+    assert.equal(c.rows[0].r.outcome, "cancelled");
+    ok(await checkout(owner, w, "event", evB, "failed", key(21)));
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 0 });
+    assert.equal(await logs(w), 2);
+  });
+
+  test("a successful event upgrade sets only that event and raises the member limit to ten", async () => {
+    const r = await checkout(owner, w, "event", evB, "success", key(30));
+    ok(r);
+    assert.deepEqual(r.rows[0].r, { outcome: "success", replayed: false });
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 1 });
+    assert.equal((await db.query("select event_upgrade from public.events where id=$1", [evA])).rows[0].event_upgrade, false);
+    assert.equal((await db.query("select max_members from public.plan_limits($1)", [w])).rows[0].max_members, 10);
+    ok(await as(owner, "select public.add_workspace_member($1,'p7c2@example.test','collaborator')", [w]));
+    denied(await newEvent(org, w, "Third"), "53400"); // the events limit is unchanged
+  });
+
+  test("repeating a request does not duplicate the upgrade or the log; a replayed key keeps its first outcome", async () => {
+    const n = await logs(w);
+    const again = await checkout(owner, w, "event", evB, "success", key(30));
+    ok(again);
+    assert.deepEqual(again.rows[0].r, { outcome: "success", replayed: true });
+    assert.equal(await logs(w), n);
+    const flip = await checkout(owner, w, "event", evB, "failed", key(30)); // same key, different outcome
+    ok(flip);
+    assert.equal(flip.rows[0].r.outcome, "success");
+    denied(await checkout(owner, w, "organiser", null, "success", key(30)), "22023"); // same key, different plan
+    denied(await checkout(owner, w, "event", evB, "success", key(31)), "P0001"); // a fresh key for something already covered
+    assert.equal(await logs(w), n);
+    const c = await checkout(owner, w, "organiser", null, "success", key(20)); // a cancelled key can never grant
+    ok(c);
+    assert.equal(c.rows[0].r.outcome, "cancelled");
+    assert.equal((await state(w)).plan, "free");
+  });
+
+  test("a key cannot be reused from another workspace", async () => {
+    denied(await checkout(extra, w2, "organiser", null, "success", key(30)), "22023");
+    assert.equal((await state(w2)).plan, "free");
+  });
+
+  test("Organiser removes the limits; ending it returns the workspace to free; event upgrades stay", async () => {
+    ok(await checkout(owner, w, "organiser", null, "success", key(40)));
+    assert.equal((await state(w)).plan, "organiser");
+    assert.deepEqual((await db.query("select max_members, max_events from public.plan_limits($1)", [w])).rows[0], { max_members: null, max_events: null });
+    ok(await newEvent(org, w, "Third"));
+    denied(await checkout(owner, w, "organiser", null, "success", key(41)), "P0001"); // cannot buy it twice
+    denied(await checkout(owner, w, "event", evA, "success", key(42)), "P0001"); // an event upgrade is pointless on Organiser
+    const end = await endPlan(owner, w);
+    ok(end);
+    assert.equal(end.rows[0].r, true);
+    assert.deepEqual(await state(w), { plan: "free", upgraded: 1 });
+    const again = await endPlan(owner, w);
+    ok(again);
+    assert.equal(again.rows[0].r, false);
+  });
+
+  test("returning to free keeps every event and member and applies the limits to new ones only", async () => {
+    const wd = (await as(owner, "select public.create_workspace('Downgrade Co') as id")).rows[0].id;
+    const mail = async (n) => (await db.query("select email from auth.users where id=$1", [n])).rows[0].email;
+    const c1 = (await db.query("select id from auth.users where email='p7c1@example.test'")).rows[0].id;
+    const c2 = (await db.query("select id from auth.users where email='p7c2@example.test'")).rows[0].id;
+    ok(await checkout(owner, wd, "organiser", null, "success", key(700)));
+    for (const [uid, role] of [[org, "organiser"], [c1, "collaborator"], [c2, "collaborator"]]) ok(await as(owner, "select public.add_workspace_member($1,$2,$3)", [wd, await mail(uid), role]));
+    const e1 = (await newEvent(org, wd, "Kept one")).rows[0].id;
+    const e2 = (await newEvent(org, wd, "Kept two")).rows[0].id;
+    const count = async (t) => (await db.query(`select count(*)::int as n from public.${t} where workspace_id=$1`, [wd])).rows[0].n;
+    assert.deepEqual([await count("workspace_members"), await count("events")], [4, 2]);
+    const end = await endPlan(owner, wd);
+    ok(end);
+    assert.equal(end.rows[0].r, true);
+    // nothing was removed or archived
+    assert.deepEqual([await count("workspace_members"), await count("events")], [4, 2]);
+    assert.equal((await db.query("select count(*)::int as n from public.events where workspace_id=$1 and archived_at is null", [wd])).rows[0].n, 2);
+    ok(await as(org, "update public.events set title='Kept one, edited' where id=$1", [e1])); // existing records stay editable
+    // new additions are held to the free limits
+    denied(await newEvent(org, wd, "New one"), "53400");
+    denied(await as(owner, "select public.add_workspace_member($1,$2,'collaborator')", [wd, await mail(extra)]), "53400");
+    ok(await as(org, "update public.events set archived_at = now() where id=$1", [e2]));
+    denied(await newEvent(org, wd, "New one"), "53400"); // one active event is still the limit
+    ok(await as(org, "update public.events set archived_at = now() where id=$1", [e1]));
+    ok(await newEvent(org, wd, "New one")); // none active now, so one more is allowed
+    // members: still 4 (over the free limit of 3), so adding stays blocked until two have left
+    denied(await as(owner, "select public.add_workspace_member($1,$2,'collaborator')", [wd, await mail(extra)]), "53400");
+    ok(await as(owner, "select public.remove_member($1,$2)", [wd, c2]));
+    denied(await as(owner, "select public.add_workspace_member($1,$2,'collaborator')", [wd, await mail(extra)]), "53400"); // 3 members = at the limit
+    ok(await as(owner, "select public.remove_member($1,$2)", [wd, c1]));
+    ok(await as(owner, "select public.add_workspace_member($1,$2,'collaborator')", [wd, await mail(extra)]));
+  });
+
+  test("the entitlement log is visible to owners only", async () => {
+    assert.ok((await as(owner, "select id from public.entitlement_events where workspace_id=$1", [w])).rows.length > 0);
+    none(await as(org, "select id from public.entitlement_events where workspace_id=$1", [w]));
+    none(await as(extra, "select id from public.entitlement_events where workspace_id=$1", [w]));
+    denied(await as(null, "select id from public.entitlement_events"), "42501");
   });
 });
 

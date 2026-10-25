@@ -18,6 +18,8 @@ export type EventRow = {
   updated_at: string;
   /** True for the fictional sample event loaded by "Load a sample event". */
   demo: boolean;
+  /** Sandbox Event Upgrade (test mode). Set only by the sandbox_checkout database function. */
+  event_upgrade: boolean;
   venues: { id: string; name: string } | null;
 };
 

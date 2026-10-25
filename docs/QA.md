@@ -143,15 +143,15 @@ No migration was needed: the `guests` and `schedule_entries` tables, constraints
 
 **Not checked:** screen-reader behaviour; real-device touch; a running order beyond a few hundred entries (the overlap check compares every pair); local times skipped or repeated by a DST change get one valid instant without a warning. Deferred Phase 2 email checks (P2.13, P2.15, P2.16) remain unticked.
 
-## Phase 6 — Venue layout, readiness, print, settings, privacy, demo (2026-10-26, PARTIAL: migration 006 not yet applied)
-Migration `supabase/migrations/20261026000006_layout_demo_account.sql` is written and passes the local SQL/RLS tests, but it has **not** been applied to the development project. Every gate that needs it is left unticked: P6.2, P6.3, P6.12, P6.13 (reset half), P6.16 and P6.18.
+## Phase 6 — Venue layout, readiness, print, settings, privacy, demo (verified 2026-10-26)
+Migration `supabase/migrations/20261026000006_layout_demo_account.sql` was applied to the development project by the owner; `npm run check:env` now reports "migration 006 applied (save_layout exists)".
 
 | Check | Result |
 |---|---|
 | `npm test` (unit + local SQL/RLS incl. migration 006) | **112/112** |
-| `npm run test:e2e:p6` with `E2E_NO006=1` | **20/20 passed, 8 skipped** (the 8 need migration 006) |
+| `npm run test:e2e:p6` (full, including the 8 steps that need migration 006) | **28/28**, no skips |
 | Regressions on freshly created test users, one suite at a time | `test:e2e` 17/17, `p3` 25/25, `p4` 27/27, `p5` 19/19 |
-| `test:remote` 006 checks | written, **not run** (need the migration) |
+| `npm run test:remote` (against the development project, incl. migration 006) | **118/118** |
 | lint, typecheck, production build | pass |
 
 **Why p2/p3 failed in the first combined run, and what was found.** The suites share four accounts and were run back to back without recreating them, and the first p3 ran on accounts left over from p6. p2 passed 17/17 on fresh accounts, so that was an environment ordering problem, not a product regression. The p3 re-run on fresh accounts then showed one real failure: `getByText("1 task is overdue.")` matched two elements, because the new readiness list repeats the text in its hint. That is a test defect caused by an intended UI addition; the assertion now targets the alert banner (`getByRole("alert")`), which is stricter, and p3 passes 25/25. No retry or timeout was added.
@@ -178,13 +178,57 @@ Percentage = checks passed / 11, shown with its explanation and the "planning ai
 
 **Print and summary evidence.** In print mode navigation, side bar, tabs and buttons are gone; sections stay together; tables wrap at A4 width with nothing clipped; the layout SVG prints whole. Members of the workspace can open the summary; another workspace's user and bad ids get "Page not found".
 
-**Settings, privacy, deletion.** Name saves and persists; the privacy page covers collection, purpose, who sees data, essential-only cookies, retention and deletion, and says it has not had legal review. Deleting a workspace needs its exact name and a wrong name deletes nothing. Account deletion rules (blocked for a sole owner with other members; sole-member workspaces removed with the account; shared records stay with authorship cleared) pass in local SQL tests; the browser steps need migration 006 and the secret key.
+**Settings, privacy, deletion.** Name saves and persists; the privacy page covers collection, purpose, who sees data, essential-only cookies, retention and deletion, and says it has not had legal review. Deleting a workspace needs its exact name and a wrong name deletes nothing. Account deletion rules (blocked for a sole owner with other members; sole-member workspaces removed with the account; shared records stay with authorship cleared) pass in local SQL tests, in `test:remote` and in the browser (account deletion uses the server-only secret key after all checks pass).
 
-**Pending until migration 006 is applied (8 skipped browser steps + remote checks):** save and reload of a layout with identical coordinates; stale layout save refused; venue cannot shrink below its objects and event cannot move to a venue its layout does not fit; sample event load (readiness 9 of 11, same numbers as `/demo`); sample reset affects only the sample, other events and other workspaces; account deletion for a non-sole-owner and for a sole member; `test:remote`.
+**Migration 006 checks (all pass):** a saved layout reloads with identical coordinates; a second tab with stale data is refused and none of its changes are saved; a venue cannot be made smaller than its objects and an event cannot move to a venue its layout does not fit (the database refuses; the event and venue are unchanged); the sample event loads into the signed-in owner's workspace (8 tasks, 12 guests, 8 entries, 11 layout objects, 5 quotes, 5 budget lines; readiness 9 of 11, 82%, same numbers as the public `/demo`); reset replaces only the sample and leaves the user's own events and another workspace alone; collaborators, outsiders and non-members cannot load or reset a sample; clients cannot set the `demo` flag; `save_layout` rejects collaborators, outsiders and out-of-bounds items atomically; a sole owner with other members is blocked from deleting their account and nothing changes; a member who is not the sole owner can delete their account, the shared records stay with authorship cleared, and they cannot sign in again; a user who is the only member of a workspace is deleted with it.
 
-**Cleanup:** the dev project holds 0 users, workspaces, events, venues, suppliers, guests and tasks after the runs; no existing data was touched. A first p4 run was stopped part-way once p2/p3 had broken its preconditions; its test accounts and workspaces were removed with `npm run dev:users -- delete`.
+**Cleanup:** the dev project holds 0 users, workspaces, events, venues, suppliers, guests and tasks after the runs; no existing data was touched. A first p4 run was stopped part-way once p2/p3 had broken its preconditions; its test accounts and workspaces were removed with `npm run dev:users -- delete`. One test defect found on the first full p6 run (a venue seeded after the page had loaded was missing from the select list) was fixed by reloading the page; the product behaviour it checks passed in the same step's first half.
 
 **Not checked:** screen readers; real-device touch and pointer drag on touch screens; layouts with hundreds of objects; printing in browsers other than Chromium.
+
+## Phase 7 — Pricing and test-mode upgrades (verified 2026-10-26)
+Migrations 007 (plan limits, sandbox checkout) and 008 (sandbox functions made server-only, member-limit fix) are applied to the development project. `npm run check:env` reports 005, 006, 007 and 008 applied. **No Phase 7 step is skipped.** P2.13, P2.15 and P2.16 (inbox checks) remain deferred and unticked.
+
+### Results
+| Check | Result |
+|---|---|
+| `npm run check:env` | all pass, including "migration 007 applied" and "migration 008 applied (sandbox functions are server-only)" |
+| `npm run test:remote` (real dev project, full 008 block) | **179/179** |
+| `npm run test:e2e` (Phase 2 regression, fresh accounts) | **17/17** (was 16/17 before 008) |
+| `npm run test:e2e:p7` (sandbox on, no `E2E_NO008`) | **23/23, 0 skipped** |
+| `npm run test:e2e:p7:off` (fresh server started with `PAYMENT_SANDBOX_ENABLED=false`) | **7/7** |
+| `npm test` (unit, static and local SQL/RLS on migrations 001 to 008) | **141/141** |
+| Regressions run earlier on this code (fresh accounts) | `p3` 25/25, `p4` 27/27, `p5` 19/19, `p6` 28/28 |
+| lint, typecheck, production build | pass |
+| Secret key in the client bundle | the key's value was searched for in all 34 files under `.next/static` after the build: **0 matches** |
+
+Not rerun after migration 008 because 008 does not touch their behaviour: Phases 3, 4, 5 and 6 (their workspaces are marked Organiser by the test setup, so the limits and the member-limit fix are not exercised).
+
+### Defects found while verifying, and their status
+1. **Disabled-switch bypass (closed).** With 007 an owner's session could call `sandbox_checkout` through the public API, around `PAYMENT_SANDBOX_ENABLED`. Evidence: `test:remote` before 008 got 22023 (the call reached argument validation, not a privilege refusal). After 008: the 007 signatures return PGRST202 for owner, organiser, collaborator and outsider, and the new signatures return 42501 for the owner, organiser, collaborator, outsider and an anonymous caller (remote and browser suites).
+2. **Duplicate member at the free limit reported the plan limit (closed).** `test:e2e` (Phase 2) failed 16/17 with exactly 3 members; after 008 it passes 17/17, and `test:remote` checks the duplicate returns 23505 at the limit.
+3. **Test defects (closed).** Seeding with the admin key bypasses RLS but not the limit trigger, so the Phase 6 suite now marks its workspace Organiser. Early remote checks used request keys the key rule rejects; keys are now plain tokens, so each rejection is for the stated reason. A strict-locator failure in the Phase 7 suite was fixed with `.first()`. The raw-request replay used a field-name pattern that missed React's `_1_` prefix, so the control replay did not upgrade; after the pattern was corrected the control passes, which is what makes the disabled-server refusals meaningful.
+
+### Verified through ordinary authenticated application flows
+- **Free plan.** The first event is created by the owner's session (no admin fixture); a second active event is refused with the plan message and nothing is created; the first three members work; a fourth is refused with the plan message and nothing is added (browser), and the same limits hold at the database through real sessions (`test:remote`).
+- **Owner only; scope.** Organiser, collaborator and outsider sessions have no controls and get "Only workspace owners…" or "Page not found"; tampered hidden fields (unknown plan, free plan, short key, event with the organiser plan, missing event, malformed event, another workspace id, another workspace's event) are refused and change nothing; the server path (secret key) still refuses an actor who does not own the workspace and an event from another workspace (42501 and P0002). The other workspace's plan, events and log stayed untouched.
+- **Actor identity.** The server action takes the actor from the verified auth session (`requireUser` then `actor: user.id`); no form field, URL parameter or client-submitted value is read for it. A static test checks both actions and the checkout page, and the browser tamper test cannot change who acts.
+- **Cancel and failure.** Logged as cancelled and failed; plan, event upgrade and limits unchanged.
+- **Success.** Event Upgrade applies to that event only, raises the member limit to 10 (a fourth member is then accepted) and leaves the event limit at 1; the printed summary drops the SceneSet footer for that event only; Organiser removes both limits (a second active event is created) and also drops the footer.
+- **Replay protection.** The same request key in a second tab returns "already processed" and writes no second log row; a fresh key for something already covered is refused; a cancelled key can never become a success; a key cannot be reused for another plan or workspace.
+- **Persistence.** The plan survives a refresh and a sign-out and sign-in; a hand-typed `?r=success` URL grants nothing and shows no banner.
+- **Downgrade.** Ending the Organiser plan keeps the event upgrade, every event and every member and note; existing records stay editable; a new event is refused while events are active; the member limit applies to new members (checked in detail at the database: 4 members and 2 active events survive the downgrade; additions are refused at 4 and at 3 members; allowed below 3; one new event is allowed only when none is active).
+- **Disabled sandbox (fresh server, flag false).** The plan page says the checkout is switched off; the owner sees no upgrade or end-plan control; the checkout page refuses; replaying the real captured checkout request (success, cancellation, failure and an event upgrade) and the real captured end-Organiser request directly against the server is refused and leaves plans, upgrades and the checkout log unchanged (the server recognised the action, so the refusal comes from the switch); the owner's own session is refused (42501) when calling either database function or writing the plan columns directly. The free limits still apply with the sandbox off.
+- **Everything works on Free.** Every view of a Free workspace's event opens and a task can be added; no feature is behind a plan wall.
+
+### Visual inspection
+Pricing page (1440 px), Plan page (1440 and 375 px), checkout page (375 px): no horizontal overflow at 375 or 1440 px. Defects found and fixed earlier: a lowercase sentence after "Provisional prices.", a duplicated test-mode sentence, and unclear text on the Event Upgrade card with no event.
+
+### Known limits
+Limits apply to new events and members only; a workspace that falls back to Free keeps what it has. There is no recurring billing, so Organiser never renews or expires by itself. Test plans and account deletion need the server's secret key at runtime; without it the sandbox reports "switched off". The captured-request replay depends on Next.js server-action wire format and on action ids staying stable across a server restart (they did in this run); if a future Next.js version changes either, the disabled suite fails loudly ("the server did not recognise the captured action") instead of passing. Screen readers and real devices were not tested. Intended `PAYMENT_SANDBOX_ENABLED` values are in `README.md` and `PRD.md`.
+
+### Cleanup
+The development project holds 0 users, workspaces, events and checkout log rows after the runs; no existing data was touched.
 
 ## Lessons / unresolved assumptions (Build–Measure–Learn)
 - Phase 1 lesson: UI UX Pro Max's first, broad query returned an off-target (wedding) result; a narrower product-type query was needed. Treat the tool as input, not authority.

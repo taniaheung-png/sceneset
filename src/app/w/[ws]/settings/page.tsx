@@ -17,6 +17,7 @@ const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
   renamed: ["info", "Workspace renamed."],
   "profile-saved": ["info", "Your name was saved."],
   "confirm-mismatch": ["danger", "What you typed does not match, so nothing was deleted."],
+  "plan-limit": ["danger", "This plan's member limit is reached, so nobody was added. The workspace owner can open Plan to try a test upgrade."],
   "delete-blocked": ["danger", "You are the only owner of a workspace that other people use. Make someone else an owner, or delete that workspace, then try again. Nothing was deleted."],
   "delete-unavailable": ["danger", "Account deletion is not available on this server (it needs the server-side admin key). Nothing was deleted."],
   added: ["info", "Member added."],
@@ -58,7 +59,8 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
       <section aria-labelledby="s-ws" className="max-w-xl rounded-lg border border-rule bg-surface p-5">
         <h2 id="s-ws" className="text-lg font-bold">Workspace</h2>
         <p className="mt-1 text-sm text-ink-2">
-          Plan: <strong>{workspace.plan === "organiser" ? "Organiser" : "Free Personal"}</strong>. Your role: <strong>{role}</strong>.
+          Plan: <strong>{workspace.plan === "organiser" ? "Organiser (test)" : "Free Personal"}</strong>
+          {" "}(<Link href={`/w/${ws}/upgrade`} className="font-semibold text-primary underline">see plans and test upgrades</Link>). Your role: <strong>{role}</strong>.
         </p>
         {isOwner ? (
           <form action={renameWorkspace} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">

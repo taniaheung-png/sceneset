@@ -22,6 +22,7 @@ const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
   unarchived: ["info", "Event restored."],
   deleted: ["info", "Event deleted."],
   "sample-failed": ["danger", "We could not load the sample event. Nothing was changed. Try again."],
+  "plan-limit": ["danger", "The free plan allows 1 active event. Archive another event first, or ask the workspace owner to try a test upgrade under Plan."],
   forbidden: ["danger", "You do not have permission to do that, or the event no longer exists."],
 };
 const TONE = { planning: "info", confirmed: "success", done: "neutral" } as const;

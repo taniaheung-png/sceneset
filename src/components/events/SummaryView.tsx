@@ -19,7 +19,7 @@ const H2 = "text-xl font-bold";
  * print route and by the public read-only demo (which can show one section at a time via `only`).
  * Sections not in `only` are rendered `hidden`. shortcut: fine for a small static demo dataset.
  */
-export function SummaryView({ plan: p, base, only }: { plan: Plan; base: string; only?: string[] }) {
+export function SummaryView({ plan: p, base, only, branding = true }: { plan: Plan; base: string; only?: string[]; branding?: boolean }) {
   const show = (k: string) => !only || only.includes(k);
   const { event, tasks, budget, quotes, guests, entries, layout, venue, members, totals, gs, entryChecks, ready, today } = p;
   const tz = event.timezone;
@@ -191,7 +191,7 @@ export function SummaryView({ plan: p, base, only }: { plan: Plan; base: string;
       </section>
 
       <footer className="border-t border-rule pt-3 text-xs text-ink-2" hidden={Boolean(only)}>
-        Printed from SceneSet. Prototype: use fictional information only. Readiness is a planning aid, not a safety, legal or compliance certification.
+        {branding && "Printed from SceneSet. "}Prototype: use fictional information only. Readiness is a planning aid, not a safety, legal or compliance certification.
       </footer>
     </article>
   );

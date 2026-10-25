@@ -52,4 +52,20 @@ const rpc = await fetch(`${url}/rest/v1/rpc/accept_quote`, { method: "POST", hea
 const rpcBody = await rpc.json().catch(() => ({}));
 const has005 = rpcBody.code === "42501";
 check(has005, has005 ? "migration 005 applied (accept_quote exists)" : `migration 005 NOT applied yet (${rpcBody.code ?? rpc.status}). Run: npm run db:bundle -- 5, then paste supabase/_bundle.sql in the SQL Editor`);
+// Migration 006 adds save_layout(). With it present, anon is denied (42501); without it PostgREST says it cannot find it (PGRST202).
+const rpc6 = await fetch(`${url}/rest/v1/rpc/save_layout`, { method: "POST", headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify({ ev: "00000000-0000-0000-0000-000000000000", upserts: [], deletes: [] }) });
+const rpc6Body = await rpc6.json().catch(() => ({}));
+const has006 = rpc6Body.code === "42501";
+check(has006, has006 ? "migration 006 applied (save_layout exists)" : `migration 006 NOT applied yet (${rpc6Body.code ?? rpc6.status}). Run: npm run db:bundle -- 6, then paste supabase/_bundle.sql in the SQL Editor`);
+// Migrations 007 and 008: the sandbox functions. 008 makes them server-only (signature with `actor`): anon gets 42501 when it exists
+// and PGRST202 when it does not. The 007 signature (no actor) answers 42501 to anon while it is still there.
+const probeRpc = async (name, args) => {
+  const r = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify(args) });
+  return (await r.json().catch(() => ({}))).code;
+};
+const z = "00000000-0000-0000-0000-000000000000";
+const has008 = (await probeRpc("sandbox_checkout", { actor: z, ws: z, plan_id: "organiser", ev: null, outcome: "success", idem: "0123456789abcdef" })) === "42501";
+const has007 = has008 || (await probeRpc("sandbox_checkout", { ws: z, plan_id: "organiser", ev: null, outcome: "success", idem: "0123456789abcdef" })) === "42501";
+check(has007, has007 ? "migration 007 applied (plan limits and sandbox functions exist)" : "migration 007 NOT applied yet. Run: npm run db:bundle -- 7, then paste supabase/_bundle.sql in the SQL Editor");
+check(has008, has008 ? "migration 008 applied (sandbox functions are server-only)" : "migration 008 NOT applied yet: signed-in users could still call the sandbox functions directly. Run: npm run db:bundle -- 8, then paste supabase/_bundle.sql in the SQL Editor");
 process.exit(bad ? 1 : 0);

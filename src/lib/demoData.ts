@@ -110,7 +110,7 @@ export function demoPlan(now: Date = new Date()): RawPlan {
       id: "demo-event", workspace_id: "demo", title: "Harbour Night Market (sample)", type: "Pop-up market",
       goals: "Fictional sample: a one-night market with 30 stalls, a lantern parade and live music.",
       starts_at: at(0), ends_at: at(10), timezone: TZ, currency: "HKD", venue_id: venue.id, capacity: 150,
-      budget_target_minor: 8_000_000, status: "planning", archived_at: null, updated_at: v, demo: true,
+      budget_target_minor: 8_000_000, status: "planning", archived_at: null, updated_at: v, demo: true, event_upgrade: false,
       venues: { id: venue.id, name: venue.name },
     },
     tasks, budget, quotes, guests, entries, layout, venue,

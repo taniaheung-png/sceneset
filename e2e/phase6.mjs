@@ -108,6 +108,8 @@ try {
     await owner.getByRole("button", { name: "Create workspace" }).click();
     await owner.waitForURL(/\/w\/[0-9a-f-]{36}\/events$/);
     ws = /\/w\/([0-9a-f-]{36})\//.exec(owner.url())[1];
+    // This suite seeds many events in one workspace; the plan limits are tested in phase7.mjs (seeding bypasses RLS but not the limit trigger).
+    await must(admin.from("workspaces").update({ plan: "organiser" }).eq("id", ws).select("id"));
     await open(owner, `/w/${ws}/settings`);
     for (const [mail, role] of [[email("organiser"), "organiser"], [email("collaborator"), "collaborator"]]) {
       const form = owner.locator("form:has(input[name=email])");
@@ -568,6 +570,7 @@ try {
     await submit(owner, r.getByRole("button", { name: "Save venue" }));
     await r.getByText(/Some layout items would fall outside that size/).waitFor();
     const small = await seedVenue("Tiny Hall", 300, 300);
+    await open(owner, url(lab, "/layout")); // the page was loaded before this venue existed
     await owner.getByLabel("Change venue").selectOption(small);
     await submit(owner, owner.getByRole("button", { name: "Use this venue" }));
     await owner.getByText(/layout objects do not fit in that venue/).waitFor();

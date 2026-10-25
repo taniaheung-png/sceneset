@@ -15,10 +15,12 @@
     "test:remote": "node --env-file=.env.local scripts/rls-remote-test.mjs",
     "dev:users": "node --env-file=.env.local scripts/dev-users.mjs",
     "test:e2e": "node e2e/phase2.mjs",
-    "test:e2e:p3": "node e2e/phase3.mjs",
-    "test:e2e:p4": "node e2e/phase4.mjs",
-    "test:e2e:p5": "node e2e/phase5.mjs",
-    "test:e2e:p6": "node --env-file=.env.local e2e/phase6.mjs"
+    "test:e2e:p3": "node --env-file=.env.local e2e/phase3.mjs",
+    "test:e2e:p4": "node --env-file=.env.local e2e/phase4.mjs",
+    "test:e2e:p5": "node --env-file=.env.local e2e/phase5.mjs",
+    "test:e2e:p6": "node --env-file=.env.local e2e/phase6.mjs",
+    "test:e2e:p7": "node --env-file=.env.local e2e/phase7.mjs",
+    "test:e2e:p7:off": "node --env-file=.env.local e2e/phase7-disabled.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -49,8 +49,8 @@ export function SiteFooter() {
 export function PrototypeNotice() {
   return (
     <p role="note" className="bg-cue px-4 py-2 text-center text-sm font-medium text-ink">
-      <strong>Prototype build, phase 6 of 8.</strong> Accounts, events, tasks, notes, suppliers, quotes, budgets, guests, the
-      running order, venue layout, readiness check and print summary are built; payments and launch checks are not built yet.
+      <strong>Prototype build, phase 7 of 8.</strong> Accounts, events, tasks, notes, suppliers, quotes, budgets, guests, the
+      running order, venue layout, readiness check, print summary and test-mode plans are built; launch checks are not built yet. No real payment is ever taken.
     </p>
   );
 }

@@ -61,6 +61,8 @@ try {
   record("owner creates workspace", !w1.error && !!w1.data, w1.error?.message);
   const ws = w1.data;
   workspaces.push(ws);
+  // The checks below create several events and members in this workspace; the plan limits are tested on a separate free workspace at the end.
+  await admin.from("workspaces").update({ plan: "organiser" }).eq("id", ws);
   const w2 = await outsider.db.rpc("create_workspace", { ws_name: `RLS other ${run}` });
   workspaces.push(w2.data);
 
@@ -258,6 +260,112 @@ try {
   record("a user who is the only member has their workspace removed", (await outsider.db.rpc("remove_my_sole_workspaces")).data === 1
     && (await admin.from("workspaces").select("id", { count: "exact", head: true }).eq("id", w2.data)).count === 0);
   workspaces.splice(workspaces.indexOf(w2.data), 1);
+
+  // --- sandbox entitlements and plan limits (migration 007), on a fresh FREE workspace
+  const k = (n) => `remote-${run}-${n}-0123456789`;
+  // Migration 008: the sandbox functions are executable only with the server's secret key; the app passes the verified user as `actor`.
+  const co = (actor, args) => admin.rpc("sandbox_checkout", { actor, ...args });
+  const ce = (actor, wsId) => admin.rpc("sandbox_end_organiser", { actor, ws: wsId });
+  const probe = await co(owner.id, { ws, plan_id: "enterprise", ev: null, outcome: "success", idem: k("probe") });
+  const oldOne = await owner.db.rpc("sandbox_checkout", { ws, plan_id: "enterprise", ev: null, outcome: "success", idem: k("old") });
+  if (probe.error?.code === "PGRST202") {
+    console.log("SKIP migration 008 checks: the server-only sandbox functions do not exist yet (apply migrations 007 and 008, then rerun)");
+    record("migration 008 applied: signed-in users can no longer call the 007 sandbox function directly", oldOne.error?.code === "PGRST202", oldOne.error ? oldOne.error.code : "an owner can still call sandbox_checkout through the API, bypassing PAYMENT_SANDBOX_ENABLED");
+  } else {
+    for (const who of ["owner", "organiser", "collab", "outsider"]) {
+      const legacyEnd = await users[who].db.rpc("sandbox_end_organiser", { ws });
+      record(`${who}: the legacy one-argument sandbox_end_organiser no longer exists`, legacyEnd.error?.code === "PGRST202", legacyEnd.error?.code ?? "callable");
+    }
+    record("the old directly callable sandbox function is gone", oldOne.error?.code === "PGRST202", oldOne.error?.code ?? "still callable");
+    await makeUser("extra");
+    const wf = (await owner.db.rpc("create_workspace", { ws_name: `RLS free ${run}` })).data;
+    workspaces.push(wf);
+    const wlog = async () => (await admin.from("entitlement_events").select("id", { count: "exact", head: true }).eq("workspace_id", wf)).count;
+    const wplan = async () => (await admin.from("workspaces").select("plan").eq("id", wf).single()).data?.plan;
+    const upgraded = async () => ((await admin.from("events").select("id").eq("workspace_id", wf).eq("event_upgrade", true)).data ?? []).map((r) => r.id);
+    const mkEvent = (db, title) => db.from("events").insert({ workspace_id: wf, title, starts_at: start, ends_at: end }).select("id").single();
+    await owner.db.rpc("add_workspace_member", { ws: wf, member_email: organiser.email, member_role: "organiser" });
+    await owner.db.rpc("add_workspace_member", { ws: wf, member_email: collab.email, member_role: "collaborator" });
+    const e1 = await mkEvent(organiser.db, "Free event one");
+    record("free workspace: the first active event is accepted", !e1.error, e1.error?.message);
+    expectDenied("free workspace: a second active event is refused", await mkEvent(organiser.db, "Free event two"), "53400");
+    expectDenied("free workspace: a fourth member is refused", await owner.db.rpc("add_workspace_member", { ws: wf, member_email: outsider.email, member_role: "collaborator" }), "53400");
+    expectDenied("free workspace: adding an existing member at the limit reports the duplicate, not the plan limit", await owner.db.rpc("add_workspace_member", { ws: wf, member_email: organiser.email, member_role: "organiser" }), "23505");
+    expectDenied("the event upgrade cannot be written directly", await owner.db.from("events").update({ event_upgrade: true }).eq("id", e1.data?.id), "42501");
+    expectDenied("the entitlement log cannot be written directly", await owner.db.from("entitlement_events").insert({ workspace_id: wf, plan: "organiser", outcome: "success", idempotency_key: k("forge") }), "42501");
+    for (const who of ["organiser", "collab", "outsider"]) {
+      expectDenied(`${who} cannot run a checkout`, await co(users[who].id, { ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k(`deny-${who}`) }), "42501");
+      expectDenied(`${who} cannot end the Organiser plan`, await ce(users[who].id, wf), "42501");
+    }
+    // Direct API calls with a real session or the public key must fail on privilege alone, even for the workspace owner.
+    for (const [who, db] of [["owner", owner.db], ["organiser", organiser.db], ["anonymous visitor", anon]]) {
+      expectDenied(`${who} cannot call sandbox_checkout through the API`, await db.rpc("sandbox_checkout", { actor: owner.id, ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k(`direct-${who.length}`) }), "42501");
+      expectDenied(`${who} cannot call sandbox_end_organiser through the API`, await db.rpc("sandbox_end_organiser", { actor: owner.id, ws: wf }), "42501");
+    }
+    expectDenied("anonymous cannot run a checkout", await co(null, { ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k("anon") }), "42501");
+    record("denied attempts changed nothing", (await wplan()) === "free" && (await wlog()) === 0 && (await upgraded()).length === 0);
+    let badN = 0;
+    const bad = async (name, args, code) => expectDenied(name, await co(owner.id, { ws: wf, ev: null, outcome: "success", idem: k(`bad${badN++}`), ...args }), code);
+    await bad("unknown plan is rejected", { plan_id: "enterprise" }, "22023");
+    await bad("the free plan id is not sellable", { plan_id: "free" }, "22023");
+    await bad("an unknown outcome is rejected", { plan_id: "organiser", outcome: "paid" }, "22023");
+    await bad("a malformed request key is rejected", { plan_id: "organiser", idem: "short" }, "22023");
+    await bad("the event plan needs an event", { plan_id: "event" }, "22023");
+    await bad("the organiser plan takes no event", { plan_id: "organiser", ev: e1.data?.id }, "22023");
+    await bad("an event of another workspace is rejected", { plan_id: "event", ev: (await admin.from("events").select("id").eq("workspace_id", ws).limit(1)).data[0].id }, "P0002");
+    record("tampered requests changed and logged nothing", (await wplan()) === "free" && (await wlog()) === 0 && (await upgraded()).length === 0);
+    const can = await co(owner.id, { ws: wf, plan_id: "organiser", ev: null, outcome: "cancelled", idem: k("cancel") });
+    const fail = await co(owner.id, { ws: wf, plan_id: "event", ev: e1.data?.id, outcome: "failed", idem: k("fail") });
+    record("cancelled and failed checkouts are logged and grant nothing", !can.error && !fail.error && (await wlog()) === 2 && (await wplan()) === "free" && (await upgraded()).length === 0);
+    const ok1 = await co(owner.id, { ws: wf, plan_id: "event", ev: e1.data?.id, outcome: "success", idem: k("event") });
+    record("owner upgrades one event (success)", !ok1.error && ok1.data?.outcome === "success" && ok1.data?.replayed === false && (await upgraded()).join() === e1.data?.id, ok1.error?.message);
+    const rep = await co(owner.id, { ws: wf, plan_id: "event", ev: e1.data?.id, outcome: "failed", idem: k("event") });
+    record("repeating the request key replays the first outcome and writes nothing", !rep.error && rep.data?.replayed === true && rep.data?.outcome === "success" && (await wlog()) === 3);
+    expectDenied("a fresh key cannot upgrade the same event twice", await co(owner.id, { ws: wf, plan_id: "event", ev: e1.data?.id, outcome: "success", idem: k("event2") }), "P0001");
+    expectDenied("a request key cannot be reused for another plan", await co(owner.id, { ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k("event") }), "22023");
+    const cr = await co(owner.id, { ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k("cancel") });
+    record("a cancelled key can never be turned into a success", !cr.error && cr.data?.outcome === "cancelled" && (await wplan()) === "free");
+    record("the upgraded workspace allows up to ten members (a fourth is now accepted)", !(await owner.db.rpc("add_workspace_member", { ws: wf, member_email: outsider.email, member_role: "collaborator" })).error);
+    expectDenied("the events limit is unchanged by an event upgrade", await mkEvent(organiser.db, "Free event two"), "53400");
+    expectEmpty("only owners can read the entitlement log", await organiser.db.from("entitlement_events").select("id").eq("workspace_id", wf));
+    const own = await owner.db.from("entitlement_events").select("id").eq("workspace_id", wf);
+    record("the owner can read the entitlement log", !own.error && own.data.length === 3, own.error?.message);
+    const org = await co(owner.id, { ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k("org") });
+    record("owner starts the test Organiser plan", !org.error && (await wplan()) === "organiser", org.error?.message);
+    expectDenied("Organiser cannot be bought twice", await co(owner.id, { ws: wf, plan_id: "organiser", ev: null, outcome: "success", idem: k("org2") }), "P0001");
+    record("Organiser removes the event limit", !(await mkEvent(organiser.db, "Free event two")).error);
+    const end2 = await ce(owner.id, wf);
+    record("owner ends the test Organiser plan; the event upgrade stays", !end2.error && end2.data === true && (await wplan()) === "free" && (await upgraded()).join() === e1.data?.id, end2.error?.message);
+    record("the other workspace's log is untouched", (await admin.from("entitlement_events").select("id", { count: "exact", head: true }).eq("workspace_id", ws)).count === 0);
+    // --- downgrade: returning to Free keeps every record and member and applies the limits to new additions only
+    const wd = (await owner.db.rpc("create_workspace", { ws_name: `RLS downgrade ${run}` })).data;
+    workspaces.push(wd);
+    const nOf = async (t, extra = {}) => { let q = admin.from(t).select("*", { count: "exact", head: true }).eq("workspace_id", wd); for (const [c, v] of Object.entries(extra)) q = v === null ? q.is(c, null) : q.eq(c, v); return (await q).count; };
+    const dEvent = (db, title) => db.from("events").insert({ workspace_id: wd, title, starts_at: start, ends_at: end }).select("id").single();
+    record("downgrade: the workspace goes Organiser", !(await co(owner.id, { ws: wd, plan_id: "organiser", ev: null, outcome: "success", idem: k("down-org") })).error);
+    for (const [u, role] of [[organiser, "organiser"], [collab, "collaborator"], [outsider, "collaborator"]]) await owner.db.rpc("add_workspace_member", { ws: wd, member_email: u.email, member_role: role });
+    const d1 = await dEvent(organiser.db, "Kept one");
+    const d2 = await dEvent(organiser.db, "Kept two");
+    record("downgrade: Organiser holds 4 members and 2 active events", (await nOf("workspace_members")) === 4 && !d1.error && !d2.error && (await nOf("events", { archived_at: null })) === 2);
+    const down = await ce(owner.id, wd);
+    record("downgrade: the owner returns the workspace to Free", !down.error && down.data === true);
+    record("downgrade: no member or event was removed or archived", (await nOf("workspace_members")) === 4 && (await nOf("events")) === 2 && (await nOf("events", { archived_at: null })) === 2);
+    record("downgrade: existing records can still be edited", !(await organiser.db.from("events").update({ title: "Kept one, edited" }).eq("id", d1.data?.id).select("id")).error);
+    expectDenied("downgrade: a new event is refused while two are active", await dEvent(organiser.db, "New one"), "53400");
+    expectDenied("downgrade: a new member is refused while there are four", await owner.db.rpc("add_workspace_member", { ws: wd, member_email: users.extra.email, member_role: "collaborator" }), "53400");
+    await organiser.db.from("events").update({ archived_at: new Date().toISOString() }).eq("id", d2.data?.id);
+    expectDenied("downgrade: one active event is still the limit", await dEvent(organiser.db, "New one"), "53400");
+    await organiser.db.from("events").update({ archived_at: new Date().toISOString() }).eq("id", d1.data?.id);
+    record("downgrade: with none active, one new event is allowed", !(await dEvent(organiser.db, "New one")).error);
+    await owner.db.rpc("remove_member", { ws: wd, target: outsider.id });
+    expectDenied("downgrade: three members is the free limit, so a new one is still refused", await owner.db.rpc("add_workspace_member", { ws: wd, member_email: users.extra.email, member_role: "collaborator" }), "53400");
+    await owner.db.rpc("remove_member", { ws: wd, target: collab.id });
+    record("downgrade: below the limit, a member can be added again", !(await owner.db.rpc("add_workspace_member", { ws: wd, member_email: users.extra.email, member_role: "collaborator" })).error);
+    record("the downgrade test workspace is deleted", !(await owner.db.rpc("delete_workspace", { ws: wd })).error);
+    workspaces.splice(workspaces.indexOf(wd), 1);
+    record("the free test workspace is deleted", !(await owner.db.rpc("delete_workspace", { ws: wf })).error);
+    workspaces.splice(workspaces.indexOf(wf), 1);
+  }
 
   record("owner deletes workspace (cascade)", !(await owner.db.rpc("delete_workspace", { ws })).error);
   workspaces.splice(0, 1);

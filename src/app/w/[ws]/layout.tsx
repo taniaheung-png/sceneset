@@ -11,6 +11,7 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
   const { data: mine } = await (await createClient()).from("workspaces").select("id, name").order("created_at");
   const items = [
     { href: `/w/${ws}/events`, label: "Events", prefix: true },
+    { href: `/w/${ws}/upgrade`, label: "Plan", prefix: true },
     { href: `/w/${ws}/settings`, label: "Settings" },
   ];
   return (
