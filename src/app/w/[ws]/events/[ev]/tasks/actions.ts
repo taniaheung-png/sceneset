@@ -50,7 +50,7 @@ export async function createTask(fd: FormData) {
 
 export async function updateTask(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
-  const id = field(fd, "id");
+  const id = field(fd, "item");
   const f = taskFields(fd);
   if (!isUuid(id) || !f) return done(ws, ev, "invalid");
   const { data, error } = await supabase.from("tasks").update(f).eq("id", id).eq("event_id", ev).select("id");
@@ -60,7 +60,7 @@ export async function updateTask(fd: FormData) {
 /** Allowed for owners/organisers on any task, and for a collaborator on tasks assigned to them (RLS + trigger). */
 export async function setTaskStatus(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
-  const id = field(fd, "id");
+  const id = field(fd, "item");
   const status = field(fd, "status");
   if (!isUuid(id) || !STATUSES.includes(status)) return done(ws, ev, "invalid");
   const { data, error } = await supabase.from("tasks").update({ status }).eq("id", id).eq("event_id", ev).select("id");
@@ -69,7 +69,7 @@ export async function setTaskStatus(fd: FormData) {
 
 export async function deleteTask(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
-  const id = field(fd, "id");
+  const id = field(fd, "item");
   if (!isUuid(id)) return done(ws, ev, "invalid");
   const { data, error } = await supabase.from("tasks").delete().eq("id", id).eq("event_id", ev).select("id");
   return done(ws, ev, error ? keyFor(error.code) : data?.length ? "task-deleted" : "forbidden");
@@ -85,7 +85,7 @@ export async function addNote(fd: FormData) {
 
 export async function updateNote(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
-  const id = field(fd, "id");
+  const id = field(fd, "item");
   const body = field(fd, "body");
   if (!isUuid(id) || body.length < 1 || body.length > 5000) return done(ws, ev, "invalid");
   const { data, error } = await supabase.from("notes").update({ body }).eq("id", id).eq("event_id", ev).select("id");
@@ -94,7 +94,7 @@ export async function updateNote(fd: FormData) {
 
 export async function deleteNote(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
-  const id = field(fd, "id");
+  const id = field(fd, "item");
   if (!isUuid(id)) return done(ws, ev, "invalid");
   const { data, error } = await supabase.from("notes").delete().eq("id", id).eq("event_id", ev).select("id");
   return done(ws, ev, error ? keyFor(error.code) : data?.length ? "note-deleted" : "forbidden");

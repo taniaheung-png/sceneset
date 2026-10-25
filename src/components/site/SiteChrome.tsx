@@ -49,8 +49,8 @@ export function SiteFooter() {
 export function PrototypeNotice() {
   return (
     <p role="note" className="bg-cue px-4 py-2 text-center text-sm font-medium text-ink">
-      <strong>Prototype build, phase 2 of 8.</strong> Accounts and workspaces are in progress; the planning tools
-      (events, tasks, budget and more) are not built yet.
+      <strong>Prototype build, phase 3 of 8.</strong> Accounts, workspaces, events, tasks and notes work; the rest of the
+      planning tools (budget, suppliers, guests, running order, layout) are not built yet.
     </p>
   );
 }

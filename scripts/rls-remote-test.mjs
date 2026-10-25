@@ -146,6 +146,16 @@ try {
   expectDenied("entitlement log cannot be written by clients", await owner.db.from("entitlement_events").insert({ workspace_id: ws, plan: "organiser", outcome: "success", idempotency_key: `k-${run}` }), "42501");
   expectEmpty("non-owner sees no entitlement log", await organiser.db.from("entitlement_events").select("*").eq("workspace_id", ws));
 
+  // deleting an event removes its owned children (checked with the admin client, which bypasses RLS)
+  const ev3 = await organiser.db.from("events").insert({ workspace_id: ws, title: "To delete", starts_at: start, ends_at: end }).select("id").single();
+  await organiser.db.from("tasks").insert({ workspace_id: ws, event_id: ev3.data?.id, title: "child task" });
+  await organiser.db.from("notes").insert({ workspace_id: ws, event_id: ev3.data?.id, body: "child note" });
+  await organiser.db.from("guests").insert({ workspace_id: ws, event_id: ev3.data?.id, name: "child guest" });
+  expectEmpty("collaborator cannot delete an event", await collab.db.from("events").delete().eq("id", ev3.data?.id).select("id"));
+  record("organiser deletes the event", !(await organiser.db.from("events").delete().eq("id", ev3.data?.id)).error);
+  const orphans = await Promise.all(["tasks", "notes", "guests"].map((t) => admin.from(t).select("id", { count: "exact", head: true }).eq("event_id", ev3.data?.id)));
+  record("event delete cascades to tasks, notes and guests", orphans.every((o) => !o.error && o.count === 0), orphans.map((o) => o.count).join("/"));
+
   record("owner deletes workspace (cascade)", !(await owner.db.rpc("delete_workspace", { ws })).error);
   workspaces.splice(0, 1);
   expectEmpty("deleted workspace is gone for members", await organiser.db.from("workspaces").select("id").eq("id", ws));

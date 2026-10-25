@@ -136,7 +136,7 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
                         </div>
                         {(canManage || mine) && (
                           <form action={setTaskStatus} className="mt-3 flex flex-wrap gap-2" aria-label={`Move ${t.title}`}>
-                            {hidden({ id: t.id })}
+                            {hidden({ item: t.id })}
                             {COLUMNS.filter(([k]) => k !== t.status).map(([k, l]) => (
                               <Button key={k} type="submit" name="status" value={k} variant="secondary" className="min-h-11 px-3">Move to {l}</Button>
                             ))}
@@ -147,7 +147,7 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
                             <details className="w-full rounded-md border border-rule p-2">
                               <summary className="cursor-pointer text-sm font-semibold">Edit task</summary>
                               <form action={updateTask} className="mt-3 flex flex-col gap-3">
-                                {hidden({ id: t.id })}
+                                {hidden({ item: t.id })}
                                 <TextField name="title" label="Title" defaultValue={t.title} maxLength={200} required />
                                 <TextAreaField name="description" label="Details" defaultValue={t.description} maxLength={2000} />
                                 <div className="grid gap-3 sm:grid-cols-3">
@@ -158,7 +158,7 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
                                 <SubmitButton pendingText="Saving…">Save task</SubmitButton>
                               </form>
                             </details>
-                            <ConfirmAction action={deleteTask} fields={{ ws, ev, id: t.id }} label="Delete" title="Delete this task?" message={`"${t.title}" will be deleted. This cannot be undone.`} confirmLabel="Delete task" />
+                            <ConfirmAction action={deleteTask} fields={{ ws, ev, item: t.id }} label="Delete" title="Delete this task?" message={`"${t.title}" will be deleted. This cannot be undone.`} confirmLabel="Delete task" />
                           </div>
                         )}
                       </li>
@@ -198,12 +198,12 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
                       <details className="rounded-md border border-rule p-2">
                         <summary className="cursor-pointer text-sm font-semibold">Edit note</summary>
                         <form action={updateNote} className="mt-3 flex flex-col gap-3">
-                          {hidden({ id: n.id })}
+                          {hidden({ item: n.id })}
                           <TextAreaField name="body" label="Note" defaultValue={n.body} maxLength={5000} required />
                           <div><SubmitButton pendingText="Saving…">Save note</SubmitButton></div>
                         </form>
                       </details>
-                      <ConfirmAction action={deleteNote} fields={{ ws, ev, id: n.id }} label="Delete" title="Delete this note?" message="The note will be deleted. This cannot be undone." confirmLabel="Delete note" />
+                      <ConfirmAction action={deleteNote} fields={{ ws, ev, item: n.id }} label="Delete" title="Delete this note?" message="The note will be deleted. This cannot be undone." confirmLabel="Delete note" />
                     </div>
                   )}
                 </li>

@@ -1,4 +1,4 @@
-﻿# SceneSet — tasklist.md
+# SceneSet — tasklist.md
 
 > **DRAFT for founder review** (AI-drafted 2026-10-25). Nothing is pre-checked. Mark `[x]` only after the stated **Gate** passes; partial/failed/blocked tasks stay `[ ]` with a status note. Requirement IDs (R##) are defined in `PRD.md` §2.1. Execute strictly the first pending task; stop at each phase checkpoint for the founder's manual review and commit. Never stage/commit automatically.
 
@@ -54,20 +54,20 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 
 ## Phase 3 — Events, tasks, notes  (R06–R09, R16)
 
-- [ ] **P3.1** (R06) Events list route with empty state. Gate: DEV.
-- [ ] **P3.2** (R06) Create-event form (title, dates, timezone, venue, capacity, budget target, currency, goals) with server validation. Gate: row saved; invalid dates rejected with preserved input.
-- [ ] **P3.3** (R06) Edit event with stale-update check. Gate: two-tab edit → second save warns, no silent overwrite.
-- [ ] **P3.4** (R06) Archive vs delete with confirm dialogs. Gate: archived hidden by default; delete cascades children (DB check).
-- [ ] **P3.5** (R06, R16) Events search + status filter + reset + no-results. Gate: filter doesn't alter data.
-- [ ] **P3.6** (R06) Workspace/event switcher; stable routes. Gate: switching preserves view; guessed event ID of other workspace → not-found.
-- [ ] **P3.7** (R07) Dashboard skeleton: header, date/status cue tab, counts from DB (tasks overdue/upcoming). Gate: counts match DB after changes.
-- [ ] **P3.8** (R08) Task create/edit/delete form. Gate: persists after refresh.
-- [ ] **P3.9** (R08) Task board columns with status change via select/buttons (+keyboard). Gate: A11Y; dashboard counts update.
-- [ ] **P3.10** (R08, R16) Task filters (status, assignee) + reset. Gate: no-results state.
-- [ ] **P3.11** (R08) Collaborator limits (only own assigned task status). Gate: direct write by collaborator to other task denied.
-- [ ] **P3.12** (R09) Event notes (add/edit own; delete own). Gate: permission test.
-- [ ] **P3.13** (R24) Collection notice component placed on forms collecting personal data. Gate: visible on event/guest/member forms.
-- [ ] **P3.14** Phase 3 gate: create/edit/refresh/re-sign-in/teammate view checks; update `docs/QA.md`; BUILD/TYPE/LINT. Checkpoint report.
+- [x] **P3.1** (R06) Events list route with empty state. Gate: DEV. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.2** (R06) Create-event form (title, dates, timezone, venue, capacity, budget target, currency, goals) with server validation. Gate: row saved; invalid dates rejected with preserved input. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.3** (R06) Edit event with stale-update check. Gate: two-tab edit → second save warns, no silent overwrite. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.4** (R06) Archive vs delete with confirm dialogs. Gate: archived hidden by default; delete cascades children (DB check). *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.5** (R06, R16) Events search + status filter + reset + no-results. Gate: filter doesn't alter data. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.6** (R06) Workspace/event switcher; stable routes. Gate: switching preserves view; guessed event ID of other workspace → not-found. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.7** (R07) Dashboard skeleton: header, date/status cue tab, counts from DB (tasks overdue/upcoming). Gate: counts match DB after changes. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.8** (R08) Task create/edit/delete form. Gate: persists after refresh. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.9** (R08) Task board columns with status change via select/buttons (+keyboard). Gate: A11Y; dashboard counts update. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.10** (R08, R16) Task filters (status, assignee) + reset. Gate: no-results state. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.11** (R08) Collaborator limits (only own assigned task status). Gate: direct write by collaborator to other task denied. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.12** (R09) Event notes (add/edit own; delete own). Gate: permission test. *Verified: `npm run test:e2e:p3` 24/24 in role-isolated browsers against the dev project, 2026-10-26; DB-level rules by `npm run test:remote` 64/64.*
+- [x] **P3.13** (R24) Collection notice component placed on forms collecting personal data. Gate: visible on the event, note and member forms (the guest form does not exist yet; P5.1 adds the notice there). *Verified: `npm run test:e2e:p3` 25/25, 2026-10-26. Component `CollectionNotice` shown on the event, note and member forms; the guest form gets it in P5.1.*
+- [x] **P3.14** Phase 3 gate: create/edit/refresh/re-sign-in/teammate view checks; update `docs/QA.md`; BUILD/TYPE/LINT. Checkpoint report. *Gate met: create/edit/refresh/re-sign-in persistence and counts, collaborator limits, and event/workspace isolation proven by `npm run test:e2e:p3` 25/25; `test:remote` 64/64; `npm test` 39/39; lint, typecheck, build pass (docs/QA.md). Phase 2 regression `test:e2e` 17/17.*
 
 ## Phase 4 — Suppliers, quotes, budget  (R10–R12)
 
@@ -97,7 +97,7 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 
 ## Phase 6 — Venue layout, readiness, print, settings, privacy, demo  (R15, R17–R20, R24)
 
-- [ ] **P6.1** (R15) Venue create/edit (dimensions) and attach to event. Gate: persists.
+- [ ] **P6.1** (R15) Venue create/edit (dimensions) and attach to event. *Note: creating a venue and attaching it to an event already exists in the event form (phase 3); P6.1 adds editing and deleting venues.* Gate: persists.
 - [ ] **P6.2** (R15) Layout canvas (SVG, scaled) rendering saved items. Gate: reload shows identical coordinates.
 - [ ] **P6.3** (R15) Add/delete layout item (table, stage, entrance, booth, other) with label. Gate: persists.
 - [ ] **P6.4** (R15) Numeric position/size form with bounds clamping/validation. Gate: unit check of bounds logic; out-of-bounds rejected.

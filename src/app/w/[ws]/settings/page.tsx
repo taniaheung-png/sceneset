@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Banner } from "@/components/site/AuthShell";
+import { CollectionNotice } from "@/components/ui/CollectionNotice";
 import { ConfirmAction } from "@/components/ui/ConfirmAction";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { StatusChip } from "@/components/ui/StatusChip";
@@ -127,6 +128,9 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
               <option value="owner">Owner</option>
             </SelectField>
             <SubmitButton pendingText="Adding…">Add member</SubmitButton>
+            <div className="sm:col-span-3">
+              <CollectionNotice>Adding someone lets them see this workspace&apos;s events and your members&apos; names.</CollectionNotice>
+            </div>
           </form>
         ) : (
           <p className="mt-4 border-t border-rule pt-4 text-sm text-ink-2">Only owners can add members or change roles.</p>

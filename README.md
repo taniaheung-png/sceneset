@@ -1,6 +1,6 @@
-﻿# SceneSet
+# SceneSet
 
-Event planning workspace (prototype, coursework). **Status: implementation phase 2 of 8** — public pages, design system, a read-only demo, and (once Supabase is set up) accounts, workspaces and member roles. The planning tools (events, tasks, budget, …) arrive in phases 3–6. See `PRD.md` (spec), `tasklist.md` (progress) and `docs/QA.md` (evidence).
+Event planning workspace (prototype, coursework). **Status: implementation phase 3 of 8** — public pages, design system, a read-only demo, and (once Supabase is set up) accounts, workspaces and member roles. Events, the event dashboard, the task board and notes work; budget, suppliers, guests, running order and layout arrive in phases 4–6. See `PRD.md` (spec), `tasklist.md` (progress) and `docs/QA.md` (evidence).
 
 ## Run locally
 
@@ -60,7 +60,7 @@ $env:RLS_TEST_CONFIRM = "dev-project"; npm run dev:users -- delete   # removes t
 
 Only those four fixed addresses are ever touched. Use a real address for the sign-up and password-reset email checks.
 
-Browser checks for roles, onboarding and member management run in headless Chromium (project-local Playwright; install once with `npx playwright install chromium`): with the dev server running and the test users created, `$env:DEV_USERS_PASSWORD = "<printed password>"; npm run test:e2e`. Delete the users afterwards.
+Browser checks for roles, onboarding and member management run in headless Chromium (project-local Playwright; install once with `npx playwright install chromium`): with the dev server running and the test users created, `$env:DEV_USERS_PASSWORD = "<printed password>"; npm run test:e2e` (phase 2) and `npm run test:e2e:p3` (phase 3). Delete the users afterwards.
 
 ### Built-in email limits (important for testing)
 

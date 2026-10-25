@@ -1,4 +1,4 @@
-﻿# SceneSet — QA evidence
+# SceneSet — QA evidence
 
 > DRAFT log. Only real commands and outcomes are recorded. Blocked or unrun checks stay unchecked.
 > Environment: Windows 11, Node v22.13.0, npm 10.9.2, Next.js 16.4.3 (Turbopack), 2026-10-25.
@@ -71,6 +71,23 @@ Cleanup: the run's workspace and 4 test users deleted; dev project verified at 0
 **Founder decision (2026-10-26):** use fictional `@example.test` accounts created pre-confirmed through the dev helper; send no emails; keep email confirmation ON; leave inbox-dependent tests deferred and unticked. P2.21 (access-denial gate) is ticked on the database + browser evidence above.
 
 **Still unverified (need a real inbox; deferred):** P2.13 sign-up confirmation email; P2.15 reset email delivery; P2.16 valid link, reused-link rejection and genuine expiry (kept as three separate checks); P2.21 phase gate.
+
+## Phase 3 — Events, tasks, notes (2026-10-26)
+**Tooling:** same role-isolated Playwright contexts as phase 2 (`npm run test:e2e:p3`), disposable `@example.test` accounts created pre-confirmed via `npm run dev:users` (no emails sent; email confirmation stays ON), deleted afterwards. Dev project verified at 0 users / 0 workspaces / 0 events / 0 venues after the runs.
+
+| Run | Result |
+|---|---|
+| `npm run test:e2e:p3` | **25/25** |
+| `npm run test:e2e` (phase 2 regression) | 17/17 |
+| `npm run test:remote` | 64/64 (3 new: event delete cascades to tasks, notes, guests; collaborator cannot delete an event) |
+| `npm test` (unit + local SQL) | 39/39 (adds form validation, `toLocalInput`, `todayIn`) |
+| lint, typecheck, production build | pass |
+
+**What the browser run covered:** empty states (events, tasks, dashboard); event form with invalid input keeps every typed value and explains each field; overnight event (15:00 to 01:00 next day) with new venue, capacity and budget shown correctly in the event timezone; list search, status filter, clear, no-results; edit persists; **stale edit refused** when a second tab saves old data (and the first save is not overwritten); event switcher keeps the section; tasks created with assignee, due date and priority; dashboard counts (To do / In progress / Done / Overdue) equal the saved rows and **do not change when board filters are applied**; overdue warning links to the filtered board; move by buttons and **by keyboard Enter**; edit and delete (with confirmation); collaborator sees the board but cannot create/edit/delete, can move only their own task, cannot create/edit events; notes added by two roles, collaborator can edit only their own, organiser can edit and delete any; persistence after sign-out and sign-in; non-members and other-workspace users get "Page not found" for the workspace, event, tasks and edit URLs (also for a malformed id and for an event id used under a different workspace URL); archive hides, archived view lists, restore returns; delete with confirmation removes the event and its URLs 404; collection notice with privacy link on the member, event and note forms.
+
+**Bugs found and fixed during the run:** none in the product beyond test-timing issues: assertions raced React's post-action form reset (tests now wait for it), and a hidden form field named `id` shadowed `form.id` in the DOM, so it was renamed `item`.
+
+**Known limitations / unchecked:** screen-reader behaviour; real-device touch; the dashboard fetches all tasks of an event (fine at prototype scale, count queries beyond ~1,000 tasks); timezone list is a short fixed list; DST-gap local times pick one valid instant without warning; email-dependent Phase 2 gates (P2.13, P2.15, P2.16) remain deferred.
 
 ## Lessons / unresolved assumptions (Build–Measure–Learn)
 - Phase 1 lesson: UI UX Pro Max's first, broad query returned an off-target (wedding) result; a narrower product-type query was needed. Treat the tool as input, not authority.
