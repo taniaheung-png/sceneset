@@ -1,4 +1,4 @@
-# SceneSet — Product Requirements Document
+﻿# SceneSet — Product Requirements Document
 
 > **DRAFT for founder review.** Drafted by an AI assistant (Claude) on 2026-10-25 from the assignment PDF and lectures L1–L7. Not reviewed or approved. The student's own contribution, research and any AI-use declaration are left for the student to complete accurately. Nothing here is validated customer evidence.
 
@@ -292,8 +292,8 @@ Deliberate simplifications of the lecture's illustrative stack (SRC p.33 lists D
 **Architecture:** server components fetch via a per-request Supabase server client (user session → RLS applies). Mutations validated on the server (zod only if already justified; otherwise hand-written checks; decide in Phase 1 per Ponytail). Business rules that need atomicity (accept quote→budget item, last-owner check, demo workspace creation, workspace delete) live in SQL functions called via RPC with `SECURITY INVOKER` where possible; any `SECURITY DEFINER` function sets `search_path` and re-checks membership. No custom auth, event bus, microservices, or generic repository layer.
 
 **Config (names only; never print values):**
-- Public: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon key is designed to be public and relies on RLS), `NEXT_PUBLIC_SITE_URL`.
-- Private: `SUPABASE_SERVICE_ROLE_KEY` (only if a server-only admin task such as account deletion needs it; never imported in client code, never `NEXT_PUBLIC_`), `PAYMENT_SANDBOX_ENABLED`.
+- Public: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (current publishable-key approach; designed to be public and relies on RLS; a legacy `anon` key also works and the old name `NEXT_PUBLIC_SUPABASE_ANON_KEY` is read as a fallback), `NEXT_PUBLIC_SITE_URL`.
+- Private: `SUPABASE_SECRET_KEY` (`sb_secret_…`; legacy name `SUPABASE_SERVICE_ROLE_KEY` read as fallback). Used only by `scripts/rls-remote-test.mjs` and, in phase 6, account deletion; never imported by request-path app code, never `NEXT_PUBLIC_`. Also `PAYMENT_SANDBOX_ENABLED`.
 - `.env.local` (git-ignored) holds values; `.env.example` holds placeholders; `.gitignore` covers `.env*` except example.
 
 **Deployment [ASM]:** Vercel-style Next.js host + Supabase cloud project; documented in README (Phase 8). No publishing without founder approval.
@@ -352,7 +352,7 @@ Self-promotion and removing/demoting the last owner are rejected in SQL. Members
 
 ## 6. Third-party API and payment boundaries
 
-- **Supabase Auth:** email+password sign-up, sign-in, sign-out, reset-by-email with a redirect to `/reset-password`; handle expired/invalid link. **Blocked until** founder supplies a development project and email delivery (default Supabase email is rate-limited).
+- **Supabase Auth (phase 2 implementation):** email+password sign-up, sign-in, sign-out, reset-by-email. Email confirmation stays **ON**; anonymous sign-ins stay **OFF** (founder decision). Sessions via `@supabase/ssr` cookies; `src/proxy.ts` is the only place tokens are refreshed and gates `/app`, `/onboarding`, `/w/*`; pages re-verify with `getClaims()`. Emailed links land on `/auth/confirm` (accepts `token_hash`+`type` from custom templates and PKCE `code` from default templates); only same-site relative `next` paths are honoured. Sign-up and reset show the same message whether or not an account exists. **Built-in email restrictions (documented in README):** development only; delivers only to project-team addresses; about 2 messages/hour; no delivery guarantee; custom SMTP is required before real users.
 - **Server operations:** create workspace, create demo, add/change/remove member, event CRUD, task/budget/etc. CRUD, accept-quote-link, layout save, sandbox upgrade, account/workspace deletion. Each: authenticate session → authorise role → validate input → perform → revalidate cache.
 - **Payment sandbox [ASM]:** local simulation, **no card data**, no money, no Stripe. Flow: owner → `/upgrade` → pick known plan id (`event`, `organiser`) → sandbox page with Success / Cancel / Fail → server action re-checks owner role, accepts only known plan ids, requires `PAYMENT_SANDBOX_ENABLED=true`, uses an idempotency key; only *Success* updates entitlement; Cancel/Fail write a log row and grant nothing. UI always shows "Test mode — No real payment taken". Kept in its own module/route so production billing can replace it. If Stripe is ever added: test mode only, server-held secrets, signed webhook verification, amount/plan verification, idempotent grant, never trust success URL.
 - **Entitlement matrix [ASM]:** *Free Personal* HKD 0 — all MVP features, 1 active event, 1 member (owner) + up to 2 collaborators. *Event Upgrade* HKD 149 per event — that event unlocks up to 10 members and print summary branding-free. *Organiser* HKD 299/month — unlimited active events and members. **Required functionality remains demonstrable on Free** (limits are soft counts enforced server-side but demo workspace is pre-upgraded). No metering, tax, invoicing, coupons or proration.
@@ -405,3 +405,4 @@ Self-promotion and removing/demoting the last owner are rejected in SQL. Members
 | USER money/time | R28 | schema, formatters | 2, 4, 5 | Unit checks (rounding, timezone) |
 | USER isolation | R27 | RLS, RPC | 2→8 | Direct SQL + route cross-tenant tests |
 | L7 pp.55–71 | notes only | `PRD.md §1` | 0 | Formula recalculated (347) |
+

@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated SQL bundle for the Supabase SQL editor
+/supabase/_bundle.sql

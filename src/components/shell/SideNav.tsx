@@ -1,14 +1,27 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
 
-export type NavItem = { href: string; label: string };
+/** `prefix`: also highlight for nested pages (e.g. Events while inside an event). */
+export type NavItem = { href: string; label: string; prefix?: boolean };
 
 /** Desktop: fixed sidebar. Below 1024px: top bar with a disclosure button (Escape closes it). */
-export function SideNav({ items, eventTitle, note }: { items: NavItem[]; eventTitle: string; note: string }) {
+export function SideNav({
+  items,
+  eventTitle,
+  label = "Current event",
+  note,
+  footer,
+}: {
+  items: NavItem[];
+  eventTitle: string;
+  label?: string;
+  note?: string;
+  footer?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
@@ -48,13 +61,13 @@ export function SideNav({ items, eventTitle, note }: { items: NavItem[]; eventTi
       >
         <Link href="/" className="hidden font-display text-xl font-bold lg:block">SceneSet</Link>
         <div className="rounded-md bg-sunken p-3">
-          <p className="text-xs text-ink-2">Current event</p>
+          <p className="text-xs text-ink-2">{label}</p>
           <p className="font-semibold leading-snug">{eventTitle}</p>
         </div>
         <nav aria-label="Event">
           <ul className="flex flex-col gap-1">
             {items.map((item) => {
-              const current = pathname === item.href;
+              const current = pathname === item.href || (item.prefix === true && pathname.startsWith(`${item.href}/`));
               return (
                 <li key={item.href}>
                   <Link
@@ -70,8 +83,12 @@ export function SideNav({ items, eventTitle, note }: { items: NavItem[]; eventTi
             })}
           </ul>
         </nav>
-        <p className="mt-auto text-xs text-ink-2">{note}</p>
+        <div className="mt-auto flex flex-col gap-2 text-xs text-ink-2">
+          {note && <p>{note}</p>}
+          {footer}
+        </div>
       </aside>
     </div>
   );
 }
+

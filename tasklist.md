@@ -30,27 +30,27 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 ## Phase 2 — Database, authentication, workspace isolation  (R02–R05, R27, R28)
 *Prereq for all: founder supplies a Supabase development project (URL, anon key, optional service key) in `.env.local`. **BLOCKED until supplied.***
 
-- [ ] **P2.1** Verify config presence without printing values; confirm target is a development project. Gate: check script prints only set/unset.
-- [ ] **P2.2** Install `@supabase/supabase-js`, `@supabase/ssr`. Gate: BUILD.
-- [ ] **P2.3** Migration 001: `profiles`, `workspaces`, `workspace_members`, role enum, updated_at trigger. Gate: DB apply + table inspect.
-- [ ] **P2.4** (R27) RLS helper functions + policies for those three tables. Gate: DB direct test — non-member SELECT returns 0 rows, anon returns 0.
-- [ ] **P2.5** (R05) Last-owner and self-promotion protections (trigger/RPC). Gate: DB tests — demote/remove last owner rejected; collaborator cannot set own role.
-- [ ] **P2.6** Migration 002: `venues`, `events` (+ constraints, currency/timezone). Gate: DB; constraint violations (ends<starts, negative target) rejected.
-- [ ] **P2.7** Migration 003: `tasks`, `schedule_entries`, `notes`, `guests`, `layout_items`. Gate: DB; checks reject bad values.
-- [ ] **P2.8** Migration 004: `suppliers`, `quotes`, `budget_items` (restrict supplier delete, unique quote link, paid≤committed). Gate: DB negative tests.
-- [ ] **P2.9** (R27) Same-workspace triggers for assignee/supplier/venue/quote links. Gate: DB — forged cross-workspace ID rejected.
-- [ ] **P2.10** (R27) RLS policies for all remaining tables per role matrix. Gate: SQL test script `supabase/tests/rls.sql` (or equivalent) all pass: member read, collaborator write denied on budget, cross-tenant denied on read/write/delete/aggregate.
-- [ ] **P2.11** `entitlement_events` table (sandbox log). Gate: DB.
-- [ ] **P2.12** Supabase client helpers (browser/server) and session refresh middleware. Gate: BUILD + DEV; no service key in client bundle (grep build output).
-- [ ] **P2.13** (R02) Sign-up page + action. Gate: new user row in `auth.users` + `profiles`.
-- [ ] **P2.14** (R02) Sign-in / sign-out. Gate: session persists across refresh; sign-out clears; protected route redirects.
-- [ ] **P2.15** (R03) Forgot-password request page. Gate: email sent (or logged by Supabase) — *needs email delivery*.
-- [ ] **P2.16** (R03) Reset-password completion page with expired/invalid-link state. Gate: password changes; old link fails with clear message.
-- [ ] **P2.17** (R02) Deep-link protection (redirect to login, return after). Gate: DEV manual test.
-- [ ] **P2.18** (R04) Onboarding: create workspace (creator = owner) via RPC. Gate: DB row + membership; refresh persists.
-- [ ] **P2.19** (R05) Settings → members: add existing account by email, change role, remove (owner only). Gate: direct-API test as organiser/collaborator denied.
-- [ ] **P2.20** (R28) Money (minor-unit parse/format) and timezone helpers with unit checks. Gate: `npm test` — rounding, zero, negative reject, overnight/DST sample.
-- [ ] **P2.21** Phase 2 gate: two-user test proves anonymous and cross-workspace access denied; record in `docs/QA.md`. Checkpoint report.
+- [x] **P2.1** Verify config presence without printing values; confirm target is a development project. Gate: check script prints only set/unset. *Done via `npm run check:env` (prints only pass/fail).*
+- [x] **P2.2** Install `@supabase/supabase-js`, `@supabase/ssr`. Gate: BUILD.
+- [x] **P2.3** Migration 001: `profiles`, `workspaces`, `workspace_members`, role enum, updated_at trigger. Gate: DB apply + table inspect. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.4** (R27) RLS helper functions + policies for those three tables. Gate: DB direct test — non-member SELECT returns 0 rows, anon returns 0. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.5** (R05) Last-owner and self-promotion protections (trigger/RPC). Gate: DB tests — demote/remove last owner rejected; collaborator cannot set own role. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.6** Migration 002: `venues`, `events` (+ constraints, currency/timezone). Gate: DB; constraint violations (ends<starts, negative target) rejected. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.7** Migration 003: `tasks`, `schedule_entries`, `notes`, `guests`, `layout_items`. Gate: DB; checks reject bad values. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.8** Migration 004: `suppliers`, `quotes`, `budget_items` (restrict supplier delete, unique quote link, paid≤committed). Gate: DB negative tests. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.9** (R27) Same-workspace triggers for assignee/supplier/venue/quote links. Gate: DB — forged cross-workspace ID rejected. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.10** (R27) RLS policies for all remaining tables per role matrix. Gate: SQL test script `supabase/tests/rls.sql` (or equivalent) all pass: member read, collaborator write denied on budget, cross-tenant denied on read/write/delete/aggregate. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.11** `entitlement_events` table (sandbox log). Gate: DB. *Verified on the dev project: `npm run test:remote` 61/61 on 2026-10-26 (plus 26 local PGlite tests).*
+- [x] **P2.12** Supabase client helpers (browser/server) and session refresh middleware. Gate: BUILD + DEV; no service key in client bundle (grep build output).
+- [ ] **P2.13** (R02) Sign-up page + action. Gate: new user row in `auth.users` + `profiles`. *Status: code written; needs a real confirmation email (built-in mailer: project-team addresses only, ~2/hour). Awaiting inbox action; not tested.*
+- [x] **P2.14** (R02) Sign-in / sign-out. Gate: session persists across refresh; sign-out clears; protected route redirects. *Verified in a real browser (Playwright, one isolated context per role) against the dev project, 2026-10-26: `npm run test:e2e` 17/17.*
+- [ ] **P2.15** (R03) Forgot-password request page. Gate: email sent (or logged by Supabase) — *needs email delivery*. *Status: code written; not tested (email delivery needed).*
+- [ ] **P2.16** (R03) Reset-password completion page with expired/invalid-link state. Gate: password changes; old link fails with clear message. *Status: code written; invalid-link redirect verified, valid and expired link paths not tested.*
+- [x] **P2.17** (R02) Deep-link protection (redirect to login, return after). Gate: DEV manual test. *Verified in a real browser (Playwright, one isolated context per role) against the dev project, 2026-10-26: `npm run test:e2e` 17/17.*
+- [x] **P2.18** (R04) Onboarding: create workspace (creator = owner) via RPC. Gate: DB row + membership; refresh persists. *Verified in a real browser (Playwright, one isolated context per role) against the dev project, 2026-10-26: `npm run test:e2e` 17/17.*
+- [x] **P2.19** (R05) Settings → members: add existing account by email, change role, remove (owner only). Gate: direct-API test as organiser/collaborator denied. *Verified in a real browser (Playwright, one isolated context per role) against the dev project, 2026-10-26: `npm run test:e2e` 17/17.*
+- [x] **P2.20** (R28) Money (minor-unit parse/format) and timezone helpers with unit checks. Gate: `npm test` — rounding, zero, negative reject, overnight/DST sample.
+- [x] **P2.21** Phase 2 gate: two-user test proves anonymous and cross-workspace access denied; record in `docs/QA.md`. Checkpoint report. *Gate met: `npm run test:remote` 61/61 and `npm run test:e2e` 17/17 prove anonymous and cross-workspace denial on the dev project (docs/QA.md). **Phase 2 as a whole stays incomplete:** P2.13, P2.15 and P2.16 need a real inbox and are deferred by founder decision (email confirmation stays ON; no emails sent).*
 
 ## Phase 3 — Events, tasks, notes  (R06–R09, R16)
 
@@ -159,5 +159,9 @@ Templates, real supplier-referral revenue, public RSVP, email invitations, calen
 
 ## Coverage matrix (R-ID → first implementing tasks)
 R01 P1.8 · R02 P2.13–14,P2.17 · R03 P2.15–16 · R04 P2.18 · R05 P2.5,P2.19 · R06 P3.1–6 · R07 P3.7,P4.10,P5.4,P5.8,P6.17 · R08 P3.8–11 · R09 P3.12 · R10 P4.1–2 · R11 P4.3–4 · R12 P4.5–9 · R13 P5.1–3 · R14 P5.5–7 · R15 P6.1–7 · R16 P3.5,3.10,4.2,4.8,5.2 · R17 P6.8–9 · R18 P6.10–11 · R19 P6.12–13 · R20 P6.15 · R21 P1.9,P7.1 · R22 P7.2–6 · R23 P7.7 · R24 P3.13,P6.14,P6.16 · R25 P1.4–6,P8.4 · R26 P1.7,P8.5 · R27 P2.4,2.9–10,P8.3 · R28 P2.20,P4.6,P5.6 · R29 P8.1,8.10–11 · R30 P8.12
+
+
+
+
 
 

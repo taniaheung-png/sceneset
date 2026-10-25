@@ -16,8 +16,8 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
       />
       <div className="min-w-0 flex-1">
         <p role="note" className="bg-cue px-4 py-2 text-sm font-medium text-ink">
-          <strong>Preview, not the working app.</strong> This page shows a static, fictional sample. Nothing here is saved,
-          and sign-in and editing are not connected yet.
+          <strong>Preview, not the working app.</strong> This page shows a static, fictional sample. Nothing here is saved
+          and nothing can be edited. Create an account to start a real workspace.
         </p>
         <main id="main" className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6">
           {children}

@@ -9,20 +9,30 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "contrast": "node scripts/contrast.mjs",
-    "test": "node --test"
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/*.test.mjs supabase/tests/*.test.mjs",
+    "check:env": "node --env-file=.env.local scripts/check-env.mjs",
+    "db:bundle": "node scripts/db-bundle.mjs",
+    "test:remote": "node --env-file=.env.local scripts/rls-remote-test.mjs",
+    "dev:users": "node --env-file=.env.local scripts/dev-users.mjs",
+    "test:e2e": "node e2e/phase2.mjs",
+    "test:e2e:p3": "node e2e/phase3.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "playwright": "^1.64.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

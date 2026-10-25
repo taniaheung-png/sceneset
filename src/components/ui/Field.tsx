@@ -44,6 +44,22 @@ export function TextField({ label, hint, error, ...props }: Common & ComponentPr
   );
 }
 
+export function TextAreaField({ label, hint, error, ...props }: Common & ComponentProps<"textarea">) {
+  const id = useId();
+  return (
+    <Wrap id={id} label={label} hint={hint} error={error}>
+      <textarea
+        id={id}
+        rows={3}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describe(id, { label, hint, error })}
+        className={`${control} py-2 ${error ? "border-danger" : "border-control"}`}
+        {...props}
+      />
+    </Wrap>
+  );
+}
+
 export function SelectField({ label, hint, error, children, ...props }: Common & ComponentProps<"select">) {
   const id = useId();
   return (

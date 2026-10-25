@@ -1,0 +1,236 @@
+// Local SQL test: applies the real migrations to an in-process Postgres (PGlite) with a minimal
+// shim of Supabase's `auth` schema and roles, then exercises RLS/constraints as different users.
+// This verifies the SQL logic only. It does NOT replace testing against the real Supabase dev
+// project (see scripts/rls-remote-test.mjs); that gate stays unticked until it has actually run.
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { before, describe, test } from "node:test";
+import { PGlite } from "@electric-sql/pglite";
+
+const db = new PGlite();
+const dir = new URL("../migrations/", import.meta.url);
+
+const SHIM = `
+  create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
+  create schema auth;
+  create table auth.users (id uuid primary key default gen_random_uuid(), email varchar(255),
+                           raw_user_meta_data jsonb not null default '{}');
+  create function auth.uid() returns uuid language sql stable
+    as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+  grant usage on schema auth, public to anon, authenticated;
+  grant execute on function auth.uid() to anon, authenticated;
+  -- Supabase grants new public tables to these roles by default; reproduce that so our REVOKEs are tested.
+  alter default privileges in schema public grant all on tables to anon, authenticated;
+`;
+
+/** Run one statement as a role/user in its own transaction. Returns { rows } or { error: {code, message} }. */
+async function as(uid, sql, params = []) {
+  try {
+    return await db.transaction(async (tx) => {
+      await tx.query(`set local role ${uid ? "authenticated" : "anon"}`);
+      await tx.query("select set_config('request.jwt.claim.sub', $1, true)", [uid ?? ""]);
+      return { rows: (await tx.query(sql, params)).rows };
+    });
+  } catch (e) {
+    return { error: { code: e.code, message: e.message } };
+  }
+}
+const ok = (r) => assert.equal(r.error, undefined, JSON.stringify(r.error));
+const denied = (r, code) => {
+  assert.ok(r.error, "expected an error but the statement succeeded");
+  if (code) assert.equal(r.error.code, code, r.error.message);
+};
+const none = (r) => (ok(r), assert.equal(r.rows.length, 0));
+
+const U = {};
+let ws1, ws2, ev1, ev2, venue;
+
+before(async () => {
+  await db.exec(SHIM);
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) {
+    await db.exec(readFileSync(new URL(f, dir), "utf8"));
+  }
+  for (const n of ["alice", "bob", "carol", "dave"]) {
+    U[n] = (await db.query("insert into auth.users (email) values ($1) returning id", [`${n}@example.test`])).rows[0].id;
+  }
+  ws1 = (await as(U.alice, "select public.create_workspace('Alice Events') as id")).rows[0].id;
+  ws2 = (await as(U.dave, "select public.create_workspace('Dave Co') as id")).rows[0].id;
+  ok(await as(U.alice, "select public.add_workspace_member($1,'BOB@example.test','organiser')", [ws1]));
+  ok(await as(U.alice, "select public.add_workspace_member($1,'carol@example.test','collaborator')", [ws1]));
+});
+
+describe("anonymous and outsiders", () => {
+  test("anon cannot read any table", async () => {
+    for (const t of ["profiles", "workspaces", "workspace_members", "events", "tasks", "budget_items", "guests"]) {
+      denied(await as(null, `select * from public.${t}`), "42501");
+    }
+  });
+  test("anon cannot call RPCs", async () => {
+    denied(await as(null, "select public.create_workspace('x')"), "42501");
+  });
+  test("outsider sees only own workspace and no foreign events", async () => {
+    const r = await as(U.dave, "select id from public.workspaces");
+    assert.deepEqual(r.rows.map((x) => x.id), [ws2]);
+    none(await as(U.dave, "select * from public.workspace_members where workspace_id = $1", [ws1]));
+  });
+});
+
+describe("roles and membership", () => {
+  test("only owners manage members", async () => {
+    denied(await as(U.bob, "select public.add_workspace_member($1,'dave@example.test','collaborator')", [ws1]), "42501");
+    denied(await as(U.carol, "select public.set_member_role($1,$2,'owner')", [ws1, U.carol]), "42501");
+  });
+  test("no direct DML on workspace_members", async () => {
+    denied(await as(U.carol, "update public.workspace_members set role='owner' where user_id=$1", [U.carol]), "42501");
+    denied(await as(U.carol, "insert into public.workspace_members values ($1,$2,'owner')", [ws1, U.dave]), "42501");
+    denied(await as(U.carol, "delete from public.workspace_members where user_id=$1", [U.alice]), "42501");
+  });
+  test("unknown email and duplicate member are rejected", async () => {
+    denied(await as(U.alice, "select public.add_workspace_member($1,'ghost@example.test','organiser')", [ws1]), "P0002");
+    denied(await as(U.alice, "select public.add_workspace_member($1,'bob@example.test','organiser')", [ws1]), "23505");
+  });
+  test("last owner cannot be demoted or removed; a second owner unlocks it", async () => {
+    denied(await as(U.alice, "select public.set_member_role($1,$2,'organiser')", [ws1, U.alice]), "P0001");
+    denied(await as(U.alice, "select public.remove_member($1,$2)", [ws1, U.alice]), "P0001");
+    ok(await as(U.alice, "select public.set_member_role($1,$2,'owner')", [ws1, U.bob]));
+    ok(await as(U.alice, "select public.set_member_role($1,$2,'organiser')", [ws1, U.alice]));
+    ok(await as(U.bob, "select public.set_member_role($1,$2,'owner')", [ws1, U.alice]));
+    ok(await as(U.alice, "select public.set_member_role($1,$2,'organiser')", [ws1, U.bob])); // bob back to organiser
+    const r = await as(U.alice, "select role from public.workspace_members where user_id=$1 and workspace_id=$2", [U.alice, ws1]);
+    assert.equal(r.rows[0].role, "owner");
+  });
+  test("member list hides emails from non-owners", async () => {
+    const o = await as(U.alice, "select email from public.list_workspace_members($1)", [ws1]);
+    assert.ok(o.rows.every((x) => x.email));
+    const c = await as(U.carol, "select email from public.list_workspace_members($1)", [ws1]);
+    assert.equal(c.rows.length, 3);
+    assert.ok(c.rows.every((x) => x.email === null));
+    none(await as(U.dave, "select * from public.list_workspace_members($1)", [ws1]));
+  });
+  test("workspace rename is owner-only; plan is not client-writable", async () => {
+    denied(await as(U.alice, "update public.workspaces set plan='organiser' where id=$1", [ws1]), "42501");
+    none(await as(U.bob, "update public.workspaces set name='Hacked' where id=$1 returning id", [ws1]));
+    assert.equal((await as(U.alice, "update public.workspaces set name='Alice Events' where id=$1 returning id", [ws1])).rows.length, 1);
+  });
+});
+
+describe("event data isolation and permissions", () => {
+  const T = "2026-11-14T10:00:00Z", T2 = "2026-11-14T18:00:00Z";
+  const evSql = "insert into public.events (workspace_id,title,starts_at,ends_at) values ($1,'Night Market',$2,$3) returning id";
+
+  test("organiser creates; collaborator and outsider cannot", async () => {
+    const r = await as(U.bob, evSql, [ws1, T, T2]);
+    ok(r);
+    ev1 = r.rows[0].id;
+    denied(await as(U.carol, evSql, [ws1, T, T2]), "42501");
+    denied(await as(U.dave, evSql, [ws1, T, T2]), "42501");
+    denied(await as(U.bob, evSql, [ws2, T, T2]), "42501"); // forged workspace id
+    ev2 = (await as(U.dave, evSql, [ws2, T, T2])).rows[0].id;
+  });
+  test("reads are tenant-scoped", async () => {
+    assert.equal((await as(U.carol, "select id from public.events")).rows.length, 1);
+    none(await as(U.dave, "select * from public.events where id=$1", [ev1]));
+    none(await as(U.bob, "select * from public.events where id=$1", [ev2]));
+  });
+  test("cross-workspace and invalid values are rejected by the database", async () => {
+    denied(await as(U.bob, "insert into public.tasks (workspace_id,event_id,title) values ($1,$2,'x')", [ws1, ev2]), "23503");
+    denied(await as(U.bob, "insert into public.tasks (workspace_id,event_id,title,assignee_id) values ($1,$2,'x',$3)", [ws1, ev1, U.dave]), "23503");
+    denied(await as(U.bob, evSql, [ws1, T2, T]), "23514"); // ends before start
+    denied(await as(U.bob, "insert into public.events (workspace_id,title,starts_at,ends_at,timezone) values ($1,'t',$2,$3,'Mars/Base')", [ws1, T, T2]), "22023");
+    denied(await as(U.bob, "insert into public.events (workspace_id,title,starts_at,ends_at,budget_target_minor) values ($1,'t',$2,$3,-1)", [ws1, T, T2]), "23514");
+  });
+  test("event_upgrade is not client-writable", async () => {
+    denied(await as(U.bob, "update public.events set event_upgrade=true where id=$1", [ev1]), "42501");
+    denied(await as(U.bob, "insert into public.events (workspace_id,title,starts_at,ends_at,event_upgrade) values ($1,'t',$2,$3,true)", [ws1, T, T2]), "42501");
+  });
+  test("collaborator may change only status of own assigned task", async () => {
+    const mine = (await as(U.bob, "insert into public.tasks (workspace_id,event_id,title,assignee_id) values ($1,$2,'Book PA',$3) returning id", [ws1, ev1, U.carol])).rows[0].id;
+    const other = (await as(U.bob, "insert into public.tasks (workspace_id,event_id,title) values ($1,$2,'Print signs') returning id", [ws1, ev1])).rows[0].id;
+    assert.equal((await as(U.carol, "update public.tasks set status='in_progress' where id=$1 returning id", [mine])).rows.length, 1);
+    denied(await as(U.carol, "update public.tasks set title='renamed' where id=$1", [mine]), "42501");
+    denied(await as(U.carol, "update public.tasks set assignee_id=null where id=$1", [mine]), "42501");
+    none(await as(U.carol, "update public.tasks set status='done' where id=$1 returning id", [other]));
+    denied(await as(U.carol, "insert into public.tasks (workspace_id,event_id,title) values ($1,$2,'x')", [ws1, ev1]), "42501");
+    none(await as(U.carol, "delete from public.tasks where id=$1 returning id", [mine]));
+  });
+  test("notes: members add own; edit only own unless organiser/owner", async () => {
+    const n = await as(U.carol, "insert into public.notes (workspace_id,event_id,body) values ($1,$2,'hello') returning id", [ws1, ev1]);
+    ok(n);
+    denied(await as(U.carol, "insert into public.notes (workspace_id,event_id,body,author_id) values ($1,$2,'spoof',$3)", [ws1, ev1, U.bob]), "42501");
+    const b = (await as(U.bob, "insert into public.notes (workspace_id,event_id,body) values ($1,$2,'bob note') returning id", [ws1, ev1])).rows[0].id;
+    none(await as(U.carol, "update public.notes set body='x' where id=$1 returning id", [b]));
+    assert.equal((await as(U.bob, "update public.notes set body='edited' where id=$1 returning id", [n.rows[0].id])).rows.length, 1);
+  });
+});
+
+describe("suppliers, quotes, budget", () => {
+  let sup, quote;
+  test("collaborator cannot write; organiser can", async () => {
+    denied(await as(U.carol, "insert into public.suppliers (workspace_id,name) values ($1,'x')", [ws1]), "42501");
+    sup = (await as(U.bob, "insert into public.suppliers (workspace_id,name,category) values ($1,'Lantern Co','decor') returning id", [ws1])).rows[0].id;
+    quote = (await as(U.bob, "insert into public.quotes (workspace_id,event_id,supplier_id,amount_minor) values ($1,$2,$3,120000) returning id", [ws1, ev1, sup])).rows[0].id;
+    none(await as(U.carol, "update public.quotes set status='accepted' where id=$1 returning id", [quote])); // RLS hides the row
+  });
+  test("forged supplier from another workspace is rejected", async () => {
+    const foreign = (await as(U.dave, "insert into public.suppliers (workspace_id,name) values ($1,'Theirs') returning id", [ws2])).rows[0].id;
+    denied(await as(U.bob, "insert into public.quotes (workspace_id,event_id,supplier_id,amount_minor) values ($1,$2,$3,1)", [ws1, ev1, foreign]), "23503");
+  });
+  test("supplier with quotes cannot be deleted", async () => {
+    denied(await as(U.bob, "delete from public.suppliers where id=$1", [sup]), "23001");
+  });
+  test("budget constraints; quote link is not client-writable", async () => {
+    const ins = "insert into public.budget_items (workspace_id,event_id,category,name,planned_minor,committed_minor,paid_minor) values ($1,$2,'decor','Lanterns',$3,$4,$5)";
+    ok(await as(U.bob, ins, [ws1, ev1, 100000, 120000, 50000]));
+    denied(await as(U.bob, ins, [ws1, ev1, 100000, 120000, 130000]), "23514"); // paid > committed
+    denied(await as(U.bob, ins, [ws1, ev1, -1, 0, 0]), "23514");
+    denied(await as(U.carol, ins, [ws1, ev1, 1, 1, 1]), "42501");
+    denied(await as(U.bob, "update public.budget_items set quote_id=$1 where event_id=$2", [quote, ev1]), "42501");
+  });
+});
+
+describe("venue layout", () => {
+  test("items must be inside the venue", async () => {
+    const item = "insert into public.layout_items (workspace_id,event_id,kind,label,x_cm,y_cm,w_cm,h_cm) values ($1,$2,'table','T1',$3,$4,$5,$6)";
+    denied(await as(U.bob, item, [ws1, ev1, 0, 0, 100, 100]), "23514"); // event has no venue yet
+    venue = (await as(U.bob, "insert into public.venues (workspace_id,name,width_cm,depth_cm) values ($1,'Pier 9',1000,800) returning id", [ws1])).rows[0].id;
+    ok(await as(U.bob, "update public.events set venue_id=$1 where id=$2", [venue, ev1]));
+    ok(await as(U.bob, item, [ws1, ev1, 900, 700, 100, 100])); // flush with the corner
+    denied(await as(U.bob, item, [ws1, ev1, 901, 0, 100, 100]), "23514");
+    denied(await as(U.bob, item, [ws1, ev1, 0, 0, 0, 100]), "23514");
+    denied(await as(U.carol, item, [ws1, ev1, 0, 0, 10, 10]), "42501");
+  });
+  test("deleting a venue keeps the event", async () => {
+    ok(await as(U.bob, "delete from public.venues where id=$1", [venue]));
+    const r = await as(U.bob, "select venue_id from public.events where id=$1", [ev1]);
+    assert.equal(r.rows[0].venue_id, null);
+  });
+  test("a venue from another workspace cannot be attached", async () => {
+    const v2 = (await as(U.dave, "insert into public.venues (workspace_id,name,width_cm,depth_cm) values ($1,'Theirs',500,500) returning id", [ws2])).rows[0].id;
+    denied(await as(U.bob, "update public.events set venue_id=$1 where id=$2", [v2, ev1]), "23503");
+  });
+});
+
+describe("deletion", () => {
+  test("a member can leave; their assigned tasks become unassigned", async () => {
+    ok(await as(U.carol, "select public.remove_member($1,$2)", [ws1, U.carol]));
+    const r = await as(U.alice, "select count(*)::int as n from public.tasks where assignee_id is not null and workspace_id=$1", [ws1]);
+    assert.equal(r.rows[0].n, 0);
+    none(await as(U.carol, "select * from public.events where workspace_id=$1", [ws1]));
+  });
+  test("only an owner can delete a workspace; cascade is not blocked by the last-owner rule", async () => {
+    denied(await as(U.bob, "select public.delete_workspace($1)", [ws1]), "42501");
+    denied(await as(U.carol, "select public.delete_workspace($1)", [ws1]), "42501");
+    ok(await as(U.alice, "select public.delete_workspace($1)", [ws1]));
+    none(await as(U.bob, "select id from public.workspaces where id=$1", [ws1]));
+    const left = (await db.query("select count(*)::int as n from public.events where workspace_id=$1", [ws1])).rows[0].n;
+    assert.equal(left, 0);
+  });
+  test("a user who is the sole owner cannot be deleted", async () => {
+    await assert.rejects(db.query("delete from auth.users where id=$1", [U.dave]), /at least one owner/);
+  });
+  test("a profile is created for each user and others cannot edit it", async () => {
+    const p = await as(U.dave, "select display_name from public.profiles where id=$1", [U.dave]);
+    assert.equal(p.rows[0].display_name, "dave");
+    none(await as(U.dave, "update public.profiles set display_name='x' where id=$1 returning id", [U.alice]));
+  });
+});
