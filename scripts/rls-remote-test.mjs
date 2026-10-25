@@ -107,6 +107,25 @@ try {
   expectDenied("schedule end must be after start", await ins("schedule_entries", { event_id: evId, title: "s", starts_at: end, ends_at: start }), "23514");
   expectDenied("collaborator cannot add guests", await collab.db.from("guests").insert({ workspace_id: ws, event_id: evId, name: "g" }), "42501");
 
+  // guests and run of show (phase 5)
+  expectDenied("guest party size above 50 rejected", await ins("guests", { event_id: evId, name: "g", party_size: 51 }), "23514");
+  const gOk = await ins("guests", { event_id: evId, name: "Party of four", party_size: 4, rsvp: "confirmed", group_name: "Friends" }).select("id").single();
+  record("organiser adds a guest party", !gOk.error, gOk.error?.message);
+  expectEmpty("collaborator cannot change a guest's RSVP", await collab.db.from("guests").update({ rsvp: "declined" }).eq("id", gOk.data?.id).select("id"));
+  expectEmpty("outsider cannot read guests", await outsider.db.from("guests").select("id").eq("event_id", evId));
+  expectEmpty("outsider cannot delete a guest", await outsider.db.from("guests").delete().eq("id", gOk.data?.id).select("id"));
+  expectDenied("collaborator cannot add a schedule entry", await collab.db.from("schedule_entries").insert({ workspace_id: ws, event_id: evId, title: "x", starts_at: start, ends_at: end }), "42501");
+  expectDenied("schedule owner from another workspace rejected", await ins("schedule_entries", { event_id: evId, title: "x", starts_at: start, ends_at: end, owner_id: outsider.id }), "23503");
+  const night = await ins("schedule_entries", { event_id: evId, title: "Pack-down", starts_at: "2026-11-14T15:00:00Z", ends_at: "2026-11-14T17:00:00Z" }).select("id").single();
+  record("an overnight-style 23:00 to 01:00 (HK) entry is accepted", !night.error, night.error?.message);
+  const par1 = await ins("schedule_entries", { event_id: evId, title: "Parallel A", starts_at: start, ends_at: end, owner_id: organiser.id }).select("id").single();
+  const par2 = await ins("schedule_entries", { event_id: evId, title: "Parallel B", starts_at: start, ends_at: end, owner_id: organiser.id }).select("id").single();
+  record("parallel entries, even with the same person, are allowed by the database", !par1.error && !par2.error);
+  expectEmpty("collaborator cannot edit or delete entries", await collab.db.from("schedule_entries").update({ title: "hack" }).eq("id", par1.data?.id).select("id"));
+  expectEmpty("outsider cannot read the running order", await outsider.db.from("schedule_entries").select("id").eq("event_id", evId));
+  const entryDel = await collab.db.from("schedule_entries").delete().eq("id", par2.data?.id).select("id");
+  record("collaborator cannot delete an entry", !entryDel.error && (entryDel.data?.length ?? 0) === 0);
+
   const otherSup = await outsider.db.from("suppliers").insert({ workspace_id: w2.data, name: "Theirs" }).select("id").single();
   expectDenied("quote with a supplier from another workspace rejected", await ins("quotes", { event_id: evId, supplier_id: otherSup.data?.id, amount_minor: 1 }), "23503");
   const sup = await organiser.db.from("suppliers").insert({ workspace_id: ws, name: "Lantern Co", category: "decor" }).select("id").single();

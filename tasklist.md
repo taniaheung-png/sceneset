@@ -85,15 +85,15 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 
 ## Phase 5 — Guests and run of show  (R13, R14)
 
-- [ ] **P5.1** (R13) Guest CRUD (name, optional contact, group, party size, RSVP, notes). Gate: persists; collection notice shown.
-- [ ] **P5.2** (R13, R16) Guest search + RSVP + group filters. Gate: reset + no-results.
-- [ ] **P5.3** (R13) RSVP summary: records vs attending headcount vs capacity. Gate: unit check of counts incl. party size; over-capacity indicator.
-- [ ] **P5.4** (R07) Dashboard guest summary. Gate: matches Guests page.
-- [ ] **P5.5** (R14) Schedule entry CRUD with start/end in event timezone, owner, location, notes; deterministic order. Gate: end≤start rejected; persists.
-- [ ] **P5.6** (R14) Overnight entry handling and display. Gate: unit + manual test of 23:00→01:00.
-- [ ] **P5.7** (R14) Overlap and out-of-event-window warnings (non-blocking). Gate: parallel entries still savable.
-- [ ] **P5.8** (R07) Dashboard schedule overview. Gate: reflects edits.
-- [ ] **P5.9** Phase 5 gate: role checks, filters, counts; update `docs/QA.md`; BUILD/TYPE/LINT. Checkpoint report.
+- [x] **P5.1** (R13) Guest CRUD (name, optional contact, group, party size, RSVP, notes). Gate: persists; collection notice shown. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.2** (R13, R16) Guest search + RSVP + group filters. Gate: reset + no-results. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.3** (R13) RSVP summary: records vs attending headcount vs capacity. Gate: unit check of counts incl. party size; over-capacity indicator. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.4** (R07) Dashboard guest summary. Gate: matches Guests page. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.5** (R14) Schedule entry CRUD with start/end in event timezone, owner, location, notes; deterministic order. Gate: end≤start rejected; persists. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.6** (R14) Overnight entry handling and display. Gate: unit + manual test of 23:00→01:00. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.7** (R14) Overlap and out-of-event-window warnings (non-blocking). Gate: parallel entries still savable. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.8** (R07) Dashboard schedule overview. Gate: reflects edits. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
+- [x] **P5.9** Phase 5 gate: role checks, filters, counts; update `docs/QA.md`; BUILD/TYPE/LINT. Checkpoint report. *Verified 2026-10-26: `npm run test:e2e:p5` 19/19 (role-isolated browsers, dev project), `npm run test:remote` 96/96, `npm test` 82/82.*
 
 ## Phase 6 — Venue layout, readiness, print, settings, privacy, demo  (R15, R17–R20, R24)
 

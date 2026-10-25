@@ -5,10 +5,12 @@ import { ButtonLink } from "@/components/ui/Button";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { type BudgetLine, budgetTotals, percent } from "@/lib/budget";
 import { getEvent, getMembers } from "@/lib/events";
+import { guestSummary } from "@/lib/guests";
 import { formatMinor } from "@/lib/money";
+import { entryWarnings, sortEntries } from "@/lib/schedule";
 import { createClient } from "@/lib/supabase/server";
-import { todayIn } from "@/lib/time";
-import type { TaskRow } from "@/lib/types";
+import { formatInZone, todayIn } from "@/lib/time";
+import type { GuestRow, ScheduleRow, TaskRow } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Event dashboard" };
 
@@ -20,12 +22,20 @@ export default async function EventDashboard({ params, searchParams }: PageProps
   const sp = await searchParams;
   const { event } = await getEvent(ws, ev);
   const supabase = await createClient();
-  const [{ data }, members, bud, quo] = await Promise.all([
+  const [{ data }, members, bud, quo, gst, sch] = await Promise.all([
     supabase.from("tasks").select("id, title, status, due_on, assignee_id, priority").eq("event_id", ev),
     getMembers(ws),
     supabase.from("budget_items").select("planned_minor, committed_minor, paid_minor").eq("event_id", ev),
     supabase.from("quotes").select("status").eq("event_id", ev),
+    supabase.from("guests").select("rsvp, party_size").eq("event_id", ev),
+    supabase.from("schedule_entries").select("id, title, starts_at, ends_at, owner_id").eq("event_id", ev),
   ]);
+  // Same functions and rows as the Guests and Run of show pages, so the dashboard cannot disagree with them.
+  const gs = guestSummary((gst.data ?? []) as Pick<GuestRow, "rsvp" | "party_size">[], event.capacity);
+  const entries = sortEntries((sch.data ?? []) as Pick<ScheduleRow, "id" | "title" | "starts_at" | "ends_at" | "owner_id">[]);
+  const entryChecks = entryWarnings(entries, event.starts_at, event.ends_at);
+  const outsideWindow = [...entryChecks.values()].filter((w) => w.some((x) => x.kind.endsWith("window"))).length;
+  const ownerClashes = [...entryChecks.values()].filter((w) => w.some((x) => x.kind === "owner-clash")).length;
   // Same function and same rows as the Budget page, so the dashboard can never disagree with it.
   const totals = budgetTotals((bud.data ?? []) as BudgetLine[], event.budget_target_minor);
   const quoteCount = (s: string) => (quo.data ?? []).filter((x) => x.status === s).length;
@@ -140,11 +150,65 @@ export default async function EventDashboard({ params, searchParams }: PageProps
         </p>
       </section>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section aria-labelledby="d-guests" className={card}>
+          <h2 id="d-guests" className="text-lg font-bold">Guests</h2>
+          {gs.totalRecords === 0 ? (
+            <>
+              <p className="mt-2 text-ink-2">No guests yet.</p>
+              <div className="mt-3"><ButtonLink href={`${base}/guests`} variant="secondary">Open the guest list</ButtonLink></div>
+            </>
+          ) : (
+            <>
+              <p className="num mt-2 text-sm">
+                <strong className="text-2xl">{gs.attending}</strong> people attending (confirmed)
+                {gs.capacity !== null ? <> of <strong>{gs.capacity}</strong> capacity</> : <span className="text-ink-2">, no capacity set</span>}
+              </p>
+              {gs.over && gs.remaining !== null && <p role="alert" className="mt-2 text-sm font-semibold text-danger">Over capacity by {-gs.remaining}.</p>}
+              {gs.mayExceed && gs.capacity !== null && <p className="mt-2 text-sm font-medium text-warn-ink">Would exceed capacity if every tentative guest comes ({gs.possible} people).</p>}
+              <p className="num mt-2 text-sm text-ink-2">
+                {gs.totalRecords} guest record{gs.totalRecords === 1 ? "" : "s"}: {gs.records.confirmed} confirmed, {gs.records.tentative} tentative, {gs.records.invited} awaiting a reply, {gs.records.declined} declined.
+              </p>
+              <div className="mt-3"><Link href={`${base}/guests`} className="text-sm font-semibold text-primary underline">Open the guest list</Link></div>
+            </>
+          )}
+        </section>
+
+        <section aria-labelledby="d-ros" className={card}>
+          <h2 id="d-ros" className="text-lg font-bold">Run of show</h2>
+          {entries.length === 0 ? (
+            <>
+              <p className="mt-2 text-ink-2">No running order yet.</p>
+              <div className="mt-3"><ButtonLink href={`${base}/schedule`} variant="secondary">Open the running order</ButtonLink></div>
+            </>
+          ) : (
+            <>
+              <p className="num mt-2 text-sm"><strong className="text-2xl">{entries.length}</strong> entr{entries.length === 1 ? "y" : "ies"}</p>
+              <ul className="mt-2 divide-y divide-rule text-sm">
+                {entries.slice(0, 3).map((x) => (
+                  <li key={x.id} className="flex justify-between gap-3 py-2">
+                    <span>{x.title}</span>
+                    <span className="num shrink-0 text-ink-2">{formatInZone(new Date(x.starts_at), event.timezone, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}</span>
+                  </li>
+                ))}
+              </ul>
+              {(outsideWindow > 0 || ownerClashes > 0) && (
+                <p className="mt-2 text-sm font-medium text-warn-ink">
+                  {outsideWindow > 0 && <>{outsideWindow} outside the event window. </>}
+                  {ownerClashes > 0 && <>{ownerClashes} with the same person on overlapping entries.</>}
+                </p>
+              )}
+              <div className="mt-3"><Link href={`${base}/schedule`} className="text-sm font-semibold text-primary underline">Open the running order</Link></div>
+            </>
+          )}
+        </section>
+      </div>
+
       <section aria-labelledby="d-later" className={`${card} bg-sunken`}>
         <h2 id="d-later" className="text-lg font-bold">Coming in later phases</h2>
         <p className="mt-1 text-sm text-ink-2">
-          Guests, running order, venue layout and the readiness check are not built yet, so this dashboard shows no
-          figures for them rather than placeholders.
+          Venue layout and the readiness check are not built yet, so this dashboard shows no figures for them rather
+          than placeholders.
         </p>
       </section>
     </>

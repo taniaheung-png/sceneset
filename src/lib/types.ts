@@ -54,6 +54,28 @@ export type BudgetRow = {
   updated_at: string;
 };
 
+export type GuestRow = {
+  id: string;
+  name: string;
+  contact: string | null;
+  group_name: string;
+  party_size: number;
+  rsvp: "invited" | "confirmed" | "tentative" | "declined";
+  notes: string;
+  updated_at: string;
+};
+
+export type ScheduleRow = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  location: string;
+  owner_id: string | null;
+  notes: string;
+  updated_at: string;
+};
+
 export type NoteRow = { id: string; body: string; author_id: string | null; created_at: string; updated_at: string };
 
 export type MemberRow = { user_id: string; display_name: string; role: string; email: string | null };

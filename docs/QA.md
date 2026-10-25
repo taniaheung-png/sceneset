@@ -120,6 +120,29 @@ Cleanup: the run's workspace and 4 test users deleted; dev project verified at 0
 - **Still deferred and unticked:** Phase 2 email checks P2.13, P2.15, P2.16.
 **Not checked:** screen-reader behaviour; real-device touch; amounts above about 9 quadrillion minor units (JSON numbers); email-dependent Phase 2 gates (P2.13, P2.15, P2.16) remain deferred.
 
+## Phase 5 — Guests and run of show (2026-10-26)
+No migration was needed: the `guests` and `schedule_entries` tables, constraints, grants and RLS from migrations 002 already cover this phase.
+
+**What exists:** guest list (name, optional contact, group, party size, RSVP, notes) with search and RSVP/group filters, one-click RSVP changes, edit with stale-edit protection, delete with confirmation, a collection notice on the form; a summary that keeps **records** (entries) and **people** (sum of party sizes) apart, with attending headcount = people on confirmed records, capacity remaining, an over-capacity alert and a "could exceed if tentatives come" warning; a running order (activity, start/end in the event's timezone, responsible person, location, notes) shown chronologically with day headings, overnight markers, durations, and non-blocking checks; dashboard cards for guests and the running order built from the same functions and rows as the pages.
+
+**Rules:** order is start, then end, then id (deterministic). `end <= start` is rejected (database CHECK and form), with a hint to use the next day for overnight activities. Back-to-back is not an overlap. A plain overlap is "Runs in parallel", informational only; the same person on overlapping entries and entries outside the event window are warnings. None of them block saving.
+
+| Check | Result |
+|---|---|
+| `npm test` (unit + local SQL) | **82/82** (adds 17: guest summary incl. party sizes, over/at/under capacity, no capacity, capacity 0; guest and entry form validation; ordering; overnight; timezone and DST; parallel, same-person and window warnings; durations) |
+| `npm run test:remote` | **96/96** (adds guest party-size limit, collaborator/outsider denial on guests and schedule, forged responsible person rejected, overnight and parallel entries accepted by the database) |
+| `npm run test:e2e:p5` | **19/19** |
+| Regressions `test:e2e:p4` / `p3` / `test:e2e` | 27/27, 25/25, 17/17 |
+| lint, typecheck, production build | pass |
+
+**Browser run covered:** empty states and the collection notice on the guest form; invalid input keeps every typed value **and the chosen RSVP/person**; five guests give records 5 and people 15 with attending headcount 5 (not 2 records); filters narrow the list while the summary stays identical; exactly at capacity is not flagged, over capacity by 1 is, and "if every tentative guest comes there would be 15" appears; the dashboard guest card equals the page; edit persists, stale second tab refused, delete confirmed and counts update; keyboard-only guest creation; entry validation (end before start and equal start/end) with typed values and chosen person kept; entries entered out of order display chronologically; overnight 23:00 to 01:00 shows "(+1 day)", "Overnight" and "2 h"; parallel entries save, same-person overlap and a 13:00 entry before a 15:00 event start are warned but saved, with a checks panel summarising them; stale entry edit refused and delete confirmed; the dashboard run-of-show card repeats the order and warnings; in a New York event, 12:00 is inside the window and 11:00 is flagged as before it, shown in New York time; collaborator is read-only everywhere and sees the same totals and order; outsiders get "Page not found"; data persists after sign-out and sign-in; no page-level horizontal overflow at 375, 768, 1024 and 1440 px.
+
+**Test-only issues fixed (not product bugs):** the add helpers matched stale banner text instead of waiting for their own new row; a Tab count missed the privacy link between the notes field and the submit button; two assertions compared against the wrong page.
+
+**Cleanup:** the dev project holds 0 users, workspaces, events, guests and schedule entries after the runs; no existing data was touched.
+
+**Not checked:** screen-reader behaviour; real-device touch; a running order beyond a few hundred entries (the overlap check compares every pair); local times skipped or repeated by a DST change get one valid instant without a warning. Deferred Phase 2 email checks (P2.13, P2.15, P2.16) remain unticked.
+
 ## Lessons / unresolved assumptions (Build–Measure–Learn)
 - Phase 1 lesson: UI UX Pro Max's first, broad query returned an off-target (wedding) result; a narrower product-type query was needed. Treat the tool as input, not authority.
 - Unresolved: all desirability/viability assumptions in `PRD.md` §1.1 remain untested.

@@ -46,6 +46,17 @@ export function toLocalInput(date: Date, tz: string): string {
 /** Today's calendar date (YYYY-MM-DD) in the zone: used for "overdue" so it follows the event, not the server clock zone. */
 export const todayIn = (tz: string, now: Date = new Date()): string => partsIn(now, tz).date;
 
+/** Calendar date (YYYY-MM-DD) of an instant in the zone. */
+export const localDate = (date: Date, tz: string): string => toLocalInput(date, tz).slice(0, 10);
+
+/** "1 h 30 min", "45 min", "2 h": whole minutes, rounded down. */
+export function formatDuration(startIso: string, endIso: string): string {
+  const mins = Math.max(0, Math.floor((Date.parse(endIso) - Date.parse(startIso)) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h && m ? `${h} h ${m} min` : h ? `${h} h` : `${m} min`;
+}
+
 export function formatInZone(date: Date, tz: string, options: Intl.DateTimeFormatOptions): string {
   return new Intl.DateTimeFormat("en-GB", { timeZone: tz, ...options }).format(date);
 }
