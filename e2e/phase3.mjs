@@ -213,7 +213,7 @@ try {
     await open(owner, base);
     const c = await taskCounts(owner);
     assert(c.todo === 3 && c.doing === 0 && c.done === 0 && c.overdue === 1, JSON.stringify(c));
-    await owner.getByText("1 task is overdue.").waitFor();
+    await owner.getByRole("alert").getByText("1 task is overdue.").waitFor();
   });
   await step("the overdue warning links to the filtered board", async () => {
     await owner.getByRole("link", { name: "Review overdue tasks" }).click();

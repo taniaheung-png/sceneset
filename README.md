@@ -60,7 +60,7 @@ $env:RLS_TEST_CONFIRM = "dev-project"; npm run dev:users -- delete   # removes t
 
 Only those four fixed addresses are ever touched. Use a real address for the sign-up and password-reset email checks.
 
-Browser checks for roles, onboarding and member management run in headless Chromium (project-local Playwright; install once with `npx playwright install chromium`): with the dev server running and the test users created, `$env:DEV_USERS_PASSWORD = "<printed password>"; npm run test:e2e` (phase 2) `npm run test:e2e:p3` (phase 3) `npm run test:e2e:p4` (phase 4, needs migration 005) and `npm run test:e2e:p5` (phase 5). Delete the users afterwards.
+Browser checks for roles, onboarding and member management run in headless Chromium (project-local Playwright; install once with `npx playwright install chromium`): with the dev server running and the test users created, `$env:DEV_USERS_PASSWORD = "<printed password>"; npm run test:e2e` (phase 2) `npm run test:e2e:p3` (phase 3) `npm run test:e2e:p4` (phase 4, needs migration 005) `npm run test:e2e:p5` (phase 5) and `npm run test:e2e:p6` (phase 6; needs migration 006, or set `E2E_NO006=1` to skip the steps that need it). Run each suite on freshly created test users (`npm run dev:users -- delete`, then `create`) and run them one at a time: they share the same four accounts. Delete the users afterwards.
 
 ### Built-in email limits (important for testing)
 

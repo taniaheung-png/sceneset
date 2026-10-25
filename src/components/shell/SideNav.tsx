@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -39,7 +39,7 @@ export function SideNav({
   }, [open]);
 
   return (
-    <div className="lg:sticky lg:top-0 lg:h-screen lg:w-[var(--sidebar-w)] lg:shrink-0">
+    <div className="no-print lg:sticky lg:top-0 lg:h-screen lg:w-[var(--sidebar-w)] lg:shrink-0">
       <div className="flex items-center justify-between border-b border-rule bg-surface px-4 py-2 lg:hidden">
         <Link href="/" className="font-display text-lg font-bold">SceneSet</Link>
         <button

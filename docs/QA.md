@@ -143,6 +143,49 @@ No migration was needed: the `guests` and `schedule_entries` tables, constraints
 
 **Not checked:** screen-reader behaviour; real-device touch; a running order beyond a few hundred entries (the overlap check compares every pair); local times skipped or repeated by a DST change get one valid instant without a warning. Deferred Phase 2 email checks (P2.13, P2.15, P2.16) remain unticked.
 
+## Phase 6 — Venue layout, readiness, print, settings, privacy, demo (2026-10-26, PARTIAL: migration 006 not yet applied)
+Migration `supabase/migrations/20261026000006_layout_demo_account.sql` is written and passes the local SQL/RLS tests, but it has **not** been applied to the development project. Every gate that needs it is left unticked: P6.2, P6.3, P6.12, P6.13 (reset half), P6.16 and P6.18.
+
+| Check | Result |
+|---|---|
+| `npm test` (unit + local SQL/RLS incl. migration 006) | **112/112** |
+| `npm run test:e2e:p6` with `E2E_NO006=1` | **20/20 passed, 8 skipped** (the 8 need migration 006) |
+| Regressions on freshly created test users, one suite at a time | `test:e2e` 17/17, `p3` 25/25, `p4` 27/27, `p5` 19/19 |
+| `test:remote` 006 checks | written, **not run** (need the migration) |
+| lint, typecheck, production build | pass |
+
+**Why p2/p3 failed in the first combined run, and what was found.** The suites share four accounts and were run back to back without recreating them, and the first p3 ran on accounts left over from p6. p2 passed 17/17 on fresh accounts, so that was an environment ordering problem, not a product regression. The p3 re-run on fresh accounts then showed one real failure: `getByText("1 task is overdue.")` matched two elements, because the new readiness list repeats the text in its hint. That is a test defect caused by an intended UI addition; the assertion now targets the alert banner (`getByRole("alert")`), which is stricter, and p3 passes 25/25. No retry or timeout was added.
+
+**Inspected by eye (screenshots, not only DOM):** the dashboard and summary at 375 and 1440 px, the planner at 1440 px, 375 px and after keyboard moves, the A4 print rendering of the summary, and a PDF of it. Defects found and fixed: table columns in print broke words ("Responsi ble"); fixed with no-wrap headers and short cells, and the PDF text was re-checked (7 pages, no broken words). The dashboard overflowed by 3 px at 1024 px and the summary overflowed at 375 px; both fixed, and no page has page-level horizontal overflow at 375, 768, 1024 or 1440 px.
+
+**Readiness audit (P6.17).** Eleven checks, each computed from saved rows by `buildPlan`/`readiness`, with a "Fix this" link to the view that resolves it. The dashboard has no placeholder numbers.
+
+| Check | Source rows | Passes when | Fix link |
+|---|---|---|---|
+| Venue chosen | `events.venue_id` | set | layout |
+| Budget set up | `events.budget_target_minor`, budget lines | target set **and** at least one line | edit event (no target) or budget |
+| Within budget | committed vs target | budget set up and committed does not exceed the target | budget |
+| Tasks planned | `tasks` | at least one task | tasks |
+| Nothing overdue | open tasks vs event-local today | tasks exist and none overdue | tasks (overdue filter) |
+| Supplier quotes decided | `quotes` | quotes exist and none awaiting a decision | suppliers |
+| Guest list started | `guests` | at least one record | guests |
+| Attendance within capacity | confirmed people vs capacity | capacity set, at least one guest record, and not exceeded | edit event (no capacity) or guests |
+| Running order drafted | `schedule_entries` | at least one entry | schedule |
+| No same-person clashes | schedule entries | entries exist and no overlap for one person | schedule |
+| Venue layout saved | `layout_items` | at least one object | layout |
+
+Percentage = checks passed / 11, shown with its explanation and the "planning aid, not a safety, legal or compliance certification" note. An empty event is 0 of 11; 11 of 11 needs every check; going over budget or capacity takes it back down (all tested).
+
+**Print and summary evidence.** In print mode navigation, side bar, tabs and buttons are gone; sections stay together; tables wrap at A4 width with nothing clipped; the layout SVG prints whole. Members of the workspace can open the summary; another workspace's user and bad ids get "Page not found".
+
+**Settings, privacy, deletion.** Name saves and persists; the privacy page covers collection, purpose, who sees data, essential-only cookies, retention and deletion, and says it has not had legal review. Deleting a workspace needs its exact name and a wrong name deletes nothing. Account deletion rules (blocked for a sole owner with other members; sole-member workspaces removed with the account; shared records stay with authorship cleared) pass in local SQL tests; the browser steps need migration 006 and the secret key.
+
+**Pending until migration 006 is applied (8 skipped browser steps + remote checks):** save and reload of a layout with identical coordinates; stale layout save refused; venue cannot shrink below its objects and event cannot move to a venue its layout does not fit; sample event load (readiness 9 of 11, same numbers as `/demo`); sample reset affects only the sample, other events and other workspaces; account deletion for a non-sole-owner and for a sole member; `test:remote`.
+
+**Cleanup:** the dev project holds 0 users, workspaces, events, venues, suppliers, guests and tasks after the runs; no existing data was touched. A first p4 run was stopped part-way once p2/p3 had broken its preconditions; its test accounts and workspaces were removed with `npm run dev:users -- delete`.
+
+**Not checked:** screen readers; real-device touch and pointer drag on touch screens; layouts with hundreds of objects; printing in browsers other than Chromium.
+
 ## Lessons / unresolved assumptions (Build–Measure–Learn)
 - Phase 1 lesson: UI UX Pro Max's first, broad query returned an off-target (wedding) result; a narrower product-type query was needed. Treat the tool as input, not authority.
 - Unresolved: all desirability/viability assumptions in `PRD.md` §1.1 remain untested.

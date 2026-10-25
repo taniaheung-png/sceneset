@@ -16,6 +16,8 @@ export type EventRow = {
   status: "planning" | "confirmed" | "done";
   archived_at: string | null;
   updated_at: string;
+  /** True for the fictional sample event loaded by "Load a sample event". */
+  demo: boolean;
   venues: { id: string; name: string } | null;
 };
 
@@ -73,6 +75,19 @@ export type ScheduleRow = {
   location: string;
   owner_id: string | null;
   notes: string;
+  updated_at: string;
+};
+
+export type VenueRow = { id: string; name: string; address_note: string; width_cm: number; depth_cm: number; updated_at: string };
+
+export type LayoutItemRow = {
+  id: string;
+  kind: "table" | "stage" | "entrance" | "booth" | "other";
+  label: string;
+  x_cm: number;
+  y_cm: number;
+  w_cm: number;
+  h_cm: number;
   updated_at: string;
 };
 

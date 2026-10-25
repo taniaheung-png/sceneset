@@ -5,6 +5,7 @@ import { Banner } from "@/components/site/AuthShell";
 import { ButtonLink } from "@/components/ui/Button";
 import { CueTab } from "@/components/ui/CueTab";
 import { SelectField, TextField } from "@/components/ui/Field";
+import { ConfirmAction } from "@/components/ui/ConfirmAction";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { EVENT_STATUSES } from "@/lib/eventOptions";
@@ -12,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toLocalInput, formatInZone } from "@/lib/time";
 import type { EventRow } from "@/lib/types";
 import { getWorkspace } from "@/lib/workspace";
-import { setArchived } from "./actions";
+import { loadSampleEvent, setArchived } from "./actions";
 
 export const metadata: Metadata = { title: "Events" };
 
@@ -20,6 +21,7 @@ const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
   archived: ["info", "Event archived. It is hidden from this list; show archived events to restore it."],
   unarchived: ["info", "Event restored."],
   deleted: ["info", "Event deleted."],
+  "sample-failed": ["danger", "We could not load the sample event. Nothing was changed. Try again."],
   forbidden: ["danger", "You do not have permission to do that, or the event no longer exists."],
 };
 const TONE = { planning: "info", confirmed: "success", done: "neutral" } as const;
@@ -43,10 +45,14 @@ export default async function EventsList({ params, searchParams }: PageProps<"/w
   const { data, error } = await query;
   const events = (data ?? []) as EventRow[];
   const filtering = Boolean(q || status || archived);
+  // Whether a sample event exists must not depend on the current search or filters.
+  const sampleCount = (await supabase.from("events").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("demo", true)).count ?? 0;
+  const hasSample = sampleCount > 0;
 
   return (
     <>
       <PageHeader event={workspace.name} title="Events">
+        {canManage && hasSample && <ConfirmAction action={loadSampleEvent} fields={{ ws }} label="Reset sample event" title="Reset the sample event?" message="The fictional sample event is deleted and recreated as new, so any changes you made to it are lost. Your own events, suppliers and venues are not touched." confirmLabel="Reset sample event" tone="secondary" />}
         {canManage && <ButtonLink href={`/w/${ws}/events/new`}>New event</ButtonLink>}
       </PageHeader>
       {msg && <Banner tone={msg[0]}>{msg[1]}</Banner>}
@@ -81,7 +87,16 @@ export default async function EventsList({ params, searchParams }: PageProps<"/w
               <p className="mt-2 text-ink-2">
                 {canManage ? "Create your first event to start planning tasks, suppliers and the running order." : "An organiser or owner needs to create the first event. You will see it here."}
               </p>
-              {canManage && <div className="mt-4"><ButtonLink href={`/w/${ws}/events/new`}>Create your first event</ButtonLink></div>}
+              {canManage && (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <ButtonLink href={`/w/${ws}/events/new`}>Create your first event</ButtonLink>
+                  <form action={loadSampleEvent}>
+                    <input type="hidden" name="ws" value={ws} />
+                    <SubmitButton variant="secondary" pendingText="Loading…">Load a sample event</SubmitButton>
+                  </form>
+                </div>
+              )}
+              {canManage && <p className="mt-2 text-xs text-ink-2">The sample is a fictional market with tasks, quotes, a budget, guests, a running order and a layout. You can reset or delete it any time.</p>}
             </>
           )}
         </section>
@@ -112,7 +127,7 @@ export default async function EventsList({ params, searchParams }: PageProps<"/w
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3"><Link href={`/w/${ws}/events/${e.id}`} className="font-semibold text-primary underline">{e.title}</Link></td>
+                  <td className="px-4 py-3"><Link href={`/w/${ws}/events/${e.id}`} className="font-semibold text-primary underline">{e.title}</Link>{e.demo && <span className="ml-2"><StatusChip>Sample</StatusChip></span>}</td>
                   <td className="px-4 py-3 text-ink-2">{e.venues?.name ?? "Not set"}</td>
                   <td className="px-4 py-3"><StatusChip tone={TONE[e.status]}>{EVENT_STATUSES.find(([k]) => k === e.status)?.[1]}</StatusChip></td>
                   <td className="px-4 py-3 text-right">

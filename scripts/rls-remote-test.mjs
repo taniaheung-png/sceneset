@@ -215,6 +215,50 @@ try {
   const orphans = await Promise.all(["tasks", "notes", "guests"].map((t) => admin.from(t).select("id", { count: "exact", head: true }).eq("event_id", ev3.data?.id)));
   record("event delete cascades to tasks, notes and guests", orphans.every((o) => !o.error && o.count === 0), orphans.map((o) => o.count).join("/"));
 
+  // --- venue fit, atomic layout save, sample event, account deletion helpers (migration 006)
+  const lv = await ins("venues", { name: "Fit Hall", width_cm: 1000, depth_cm: 800 }).select("id").single();
+  const smallV = await ins("venues", { name: "Tiny Hall", width_cm: 500, depth_cm: 500 }).select("id").single();
+  const lev = await ins("events", { title: "Layout event", starts_at: start, ends_at: end, venue_id: lv.data?.id }).select("id").single();
+  record("layout: item flush with the corner is accepted", !(await ins("layout_items", { event_id: lev.data?.id, kind: "table", label: "Corner", x_cm: 900, y_cm: 700, w_cm: 100, h_cm: 100 })).error);
+  expectDenied("a venue cannot be shrunk below a layout item", await organiser.db.from("venues").update({ width_cm: 950 }).eq("id", lv.data?.id), "23514");
+  expectDenied("an event cannot be attached to a venue its layout does not fit", await organiser.db.from("events").update({ venue_id: smallV.data?.id }).eq("id", lev.data?.id), "23514");
+  const lay = async () => (await admin.from("layout_items").select("id, label, x_cm, updated_at").eq("event_id", lev.data?.id).order("label")).data ?? [];
+  const [corner] = await lay();
+  const sv = await organiser.db.rpc("save_layout", { ev: lev.data?.id, upserts: [{ id: corner.id, version: corner.updated_at, kind: "table", label: "Moved", x: 800, y: 600, w: 100, h: 100 }, { kind: "stage", label: "New stage", x: 0, y: 0, w: 300, h: 200 }], deletes: [] });
+  record("save_layout applies an update and an insert together", !sv.error && sv.data === 2, sv.error?.message);
+  const [moved] = await lay();
+  expectDenied("a stale layout save is refused", await organiser.db.rpc("save_layout", { ev: lev.data?.id, upserts: [{ kind: "booth", label: "Must not appear", x: 0, y: 300, w: 100, h: 100 }, { id: moved.id, version: "2000-01-01T00:00:00+00:00", kind: "table", label: "Stale", x: 0, y: 0, w: 100, h: 100 }], deletes: [] }), "P0001");
+  expectDenied("an out-of-bounds item rejects the whole layout save", await organiser.db.rpc("save_layout", { ev: lev.data?.id, upserts: [{ kind: "booth", label: "Fine", x: 0, y: 300, w: 100, h: 100 }, { kind: "booth", label: "Too far", x: 950, y: 0, w: 100, h: 100 }], deletes: [] }), "23514");
+  record("...and nothing from the failed saves was written", (await lay()).map((i) => i.label).join() === "Moved,New stage", (await lay()).map((i) => i.label).join());
+  expectDenied("collaborator cannot save a layout", await collab.db.rpc("save_layout", { ev: lev.data?.id, upserts: [], deletes: [] }), "42501");
+  expectDenied("outsider cannot save a layout", await outsider.db.rpc("save_layout", { ev: lev.data?.id, upserts: [], deletes: [] }), "P0002");
+  record("deleting a venue keeps the event and its layout objects", !(await organiser.db.from("venues").delete().eq("id", lv.data?.id)).error
+    && (await admin.from("events").select("venue_id").eq("id", lev.data?.id).single()).data?.venue_id === null && (await lay()).length === 2);
+
+  const countOf = async (t, e) => (await admin.from(t).select("id", { count: "exact", head: true }).eq("event_id", e)).count;
+  expectDenied("collaborator cannot load the sample event", await collab.db.rpc("reset_demo", { ws }), "42501");
+  expectDenied("outsider cannot load a sample event into this workspace", await outsider.db.rpc("reset_demo", { ws }), "42501");
+  expectDenied("organiser cannot load a sample event into a workspace they are not in", await organiser.db.rpc("reset_demo", { ws: w2.data }), "42501");
+  const d1 = await organiser.db.rpc("reset_demo", { ws });
+  record("organiser loads the sample event", !d1.error && !!d1.data, d1.error?.message);
+  const sampleCounts = await Promise.all(["tasks", "guests", "schedule_entries", "layout_items", "quotes", "budget_items"].map((t) => countOf(t, d1.data)));
+  record("sample event is complete (8 tasks, 12 guests, 8 entries, 11 objects, 5 quotes, 5 budget lines)", sampleCounts.join() === "8,12,8,11,5,5", sampleCounts.join());
+  const own = (await admin.from("events").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("demo", false)).count;
+  const theirs = (await admin.from("events").select("id", { count: "exact", head: true }).eq("workspace_id", w2.data)).count;
+  const d2 = await organiser.db.rpc("reset_demo", { ws });
+  record("reset replaces the sample (new event, one sample only)", !d2.error && d2.data !== d1.data && (await admin.from("events").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("demo", true)).count === 1);
+  record("reset leaves the user's own events and the other workspace alone", (await admin.from("events").select("id", { count: "exact", head: true }).eq("workspace_id", ws).eq("demo", false)).count === own
+    && (await admin.from("events").select("id", { count: "exact", head: true }).eq("workspace_id", w2.data)).count === theirs);
+  expectDenied("clients cannot set the demo flag", await ins("events", { title: "x", starts_at: start, ends_at: end, demo: true }), "42501");
+
+  const blockers = await owner.db.rpc("account_deletion_blockers");
+  record("a sole owner with other members is listed as blocked", !blockers.error && blockers.data?.some((b) => b.workspace_id === ws), JSON.stringify(blockers.data));
+  record("a member who is not the sole owner is not blocked", ((await organiser.db.rpc("account_deletion_blockers")).data ?? []).length === 0);
+  record("remove_my_sole_workspaces removes nothing while others are members", (await owner.db.rpc("remove_my_sole_workspaces")).data === 0);
+  record("a user who is the only member has their workspace removed", (await outsider.db.rpc("remove_my_sole_workspaces")).data === 1
+    && (await admin.from("workspaces").select("id", { count: "exact", head: true }).eq("id", w2.data)).count === 0);
+  workspaces.splice(workspaces.indexOf(w2.data), 1);
+
   record("owner deletes workspace (cascade)", !(await owner.db.rpc("delete_workspace", { ws })).error);
   workspaces.splice(0, 1);
   expectEmpty("deleted workspace is gone for members", await organiser.db.from("workspaces").select("id").eq("id", ws));

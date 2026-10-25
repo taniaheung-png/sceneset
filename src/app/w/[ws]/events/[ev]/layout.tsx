@@ -27,7 +27,7 @@ export default async function EventLayout({ children, params }: LayoutProps<"/w/
         <div className="flex items-center gap-4">
           <CueTab date={toLocalInput(new Date(event.starts_at), tz).slice(0, 10)} />
           <div>
-            <Link href={`/w/${ws}/events`} className="text-sm font-semibold text-primary underline">All events</Link>
+            <Link href={`/w/${ws}/events`} className="no-print text-sm font-semibold text-primary underline">All events</Link>
             <h1 className="text-2xl font-bold leading-tight">{event.title}</h1>
             <p className="text-sm text-ink-2">
               <span className="num">{fmt(event.starts_at)} to {fmt(event.ends_at)}</span> ({tz})
@@ -46,7 +46,7 @@ export default async function EventLayout({ children, params }: LayoutProps<"/w/
       )}
       <EventTabs
         base={base}
-        items={[{ slug: "", label: "Dashboard" }, { slug: "tasks", label: "Tasks and notes" }, { slug: "suppliers", label: "Suppliers and quotes" }, { slug: "budget", label: "Budget" }, { slug: "guests", label: "Guests" }, { slug: "schedule", label: "Run of show" }, ...(canManage ? [{ slug: "edit", label: "Edit event" }] : [])]}
+        items={[{ slug: "", label: "Dashboard" }, { slug: "tasks", label: "Tasks and notes" }, { slug: "suppliers", label: "Suppliers and quotes" }, { slug: "budget", label: "Budget" }, { slug: "guests", label: "Guests" }, { slug: "schedule", label: "Run of show" }, { slug: "layout", label: "Venue layout" }, { slug: "summary", label: "Print summary" }, ...(canManage ? [{ slug: "edit", label: "Edit event" }] : [])]}
       />
       {children}
     </>

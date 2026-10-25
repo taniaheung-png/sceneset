@@ -97,23 +97,23 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 
 ## Phase 6 — Venue layout, readiness, print, settings, privacy, demo  (R15, R17–R20, R24)
 
-- [ ] **P6.1** (R15) Venue create/edit (dimensions) and attach to event. *Note: creating a venue and attaching it to an event already exists in the event form (phase 3); P6.1 adds editing and deleting venues.* Gate: persists.
+- [x] **P6.1** (R15) Venue create/edit (dimensions) and attach to event. *Note: creating a venue and attaching it to an event already exists in the event form (phase 3); P6.1 adds editing and deleting venues.* Gate: persists.
 - [ ] **P6.2** (R15) Layout canvas (SVG, scaled) rendering saved items. Gate: reload shows identical coordinates.
 - [ ] **P6.3** (R15) Add/delete layout item (table, stage, entrance, booth, other) with label. Gate: persists.
-- [ ] **P6.4** (R15) Numeric position/size form with bounds clamping/validation. Gate: unit check of bounds logic; out-of-bounds rejected.
-- [ ] **P6.5** (R15) Keyboard move/resize (arrows, modifier). Gate: A11Y keyboard-only test.
-- [ ] **P6.6** (R15) Optional pointer drag (supplements 6.5; same save path). Gate: matches numeric result.
-- [ ] **P6.7** (R15) Print representation of layout. Gate: print preview shows full venue.
-- [ ] **P6.8** (R17) Readiness checklist logic (venue set, budget reviewed, key tasks done, run-of-show present, etc.) with documented denominator. Gate: unit check — empty event is 0%, never 100%.
-- [ ] **P6.9** (R17) Readiness on dashboard with links to fix each item. Gate: links land on right view.
-- [ ] **P6.10** (R18) Summary route (details, responsibilities, budget, suppliers, guests, schedule, readiness, layout). Gate: authz — other workspace → not-found.
-- [ ] **P6.11** (R18) Print CSS. Gate: print preview, no nav/controls, no clipping, tables readable.
+- [x] **P6.4** (R15) Numeric position/size form with bounds clamping/validation. Gate: unit check of bounds logic; out-of-bounds rejected.
+- [x] **P6.5** (R15) Keyboard move/resize (arrows, modifier). Gate: A11Y keyboard-only test.
+- [x] **P6.6** (R15) Optional pointer drag (supplements 6.5; same save path). Gate: matches numeric result.
+- [x] **P6.7** (R15) Print representation of layout. Gate: print preview shows full venue.
+- [x] **P6.8** (R17) Readiness checklist logic (venue set, budget reviewed, key tasks done, run-of-show present, etc.) with documented denominator. Gate: unit check — empty event is 0%, never 100%.
+- [x] **P6.9** (R17) Readiness on dashboard with links to fix each item. Gate: links land on right view.
+- [x] **P6.10** (R18) Summary route (details, responsibilities, budget, suppliers, guests, schedule, readiness, layout). Gate: authz — other workspace → not-found.
+- [x] **P6.11** (R18) Print CSS. Gate: print preview, no nav/controls, no clipping, tables readable.
 - [ ] **P6.12** (R19) 'Load demo data' RPC copying a fictional template into the signed-in user's own workspace. Gate: DB — copy visible only to that workspace's members; no real-looking personal data.
 - [ ] **P6.13** (R19) Public read-only `/demo` backed by the fixed fictional dataset (no login, no writes) plus 'Reset demo' for the signed-in copy. Gate: anonymous visitor cannot write; reset affects only that user's demo copy (two-user test).
-- [ ] **P6.14** (R24) `/privacy` page: what is collected, why, retention, deletion, cookies (essential only). Gate: plain-language review.
-- [ ] **P6.15** (R20, R24) Settings: profile, workspace name, privacy links. Gate: persists.
+- [x] **P6.14** (R24) `/privacy` page: what is collected, why, retention, deletion, cookies (essential only). Gate: plain-language review.
+- [x] **P6.15** (R20, R24) Settings: profile, workspace name, privacy links. Gate: persists.
 - [ ] **P6.16** (R24) Account deletion with sole-owner safeguard (transfer or delete workspace first). Gate: blocked when sole owner with members; succeeds otherwise; data gone.
-- [ ] **P6.17** (R07) Dashboard: every number/check from real data; remove placeholders. Gate: audit list in `docs/QA.md`.
+- [x] **P6.17** (R07) Dashboard: every number/check from real data; remove placeholders. Gate: audit list in `docs/QA.md`.
 - [ ] **P6.18** Phase 6 gate: layout reload, print, demo reset, deletion; BUILD/TYPE/LINT/VIS. Checkpoint report.
 
 ## Phase 7 — Pricing and sandbox upgrades  (R21–R23)

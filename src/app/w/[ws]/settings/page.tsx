@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Banner } from "@/components/site/AuthShell";
 import { CollectionNotice } from "@/components/ui/CollectionNotice";
@@ -8,12 +9,16 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspace } from "@/lib/workspace";
-import { addMember, changeRole, removeMember, renameWorkspace } from "./actions";
+import { addMember, changeRole, deleteAccount, deleteWorkspace, removeMember, renameWorkspace, updateProfile } from "./actions";
 
 export const metadata: Metadata = { title: "Settings" };
 
 const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
   renamed: ["info", "Workspace renamed."],
+  "profile-saved": ["info", "Your name was saved."],
+  "confirm-mismatch": ["danger", "What you typed does not match, so nothing was deleted."],
+  "delete-blocked": ["danger", "You are the only owner of a workspace that other people use. Make someone else an owner, or delete that workspace, then try again. Nothing was deleted."],
+  "delete-unavailable": ["danger", "Account deletion is not available on this server (it needs the server-side admin key). Nothing was deleted."],
   added: ["info", "Member added."],
   "role-changed": ["info", "Role updated."],
   removed: ["info", "Member removed."],
@@ -40,6 +45,9 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
   // No generated DB types yet (needs the live project), so the RPC row shape is declared by hand.
   const { data } = await supabase.rpc("list_workspace_members", { ws });
   const members = (data ?? []) as { user_id: string; display_name: string; role: string; email: string | null }[];
+  const { data: blockerData } = await supabase.rpc("account_deletion_blockers");
+  const blockers = (blockerData ?? []) as { workspace_id: string; name: string; other_members: number }[];
+  const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
   const msg = typeof sp.m === "string" ? MESSAGES[sp.m] : undefined;
 
   return (
@@ -144,6 +152,62 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
             <div key={r}><dt className="font-semibold">{r}</dt><dd className="text-ink-2">{t}</dd></div>
           ))}
         </dl>
+      </section>
+      <section aria-labelledby="s-profile" className="max-w-xl rounded-lg border border-rule bg-surface p-5">
+        <h2 id="s-profile" className="text-lg font-bold">Your profile</h2>
+        <p className="mt-1 text-sm text-ink-2">Signed in as <strong>{user.email}</strong>. Teammates see your name; only workspace owners see member email addresses.</p>
+        <form action={updateProfile} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <input type="hidden" name="ws" value={ws} />
+          <div className="flex-1"><TextField name="display_name" label="Your name" defaultValue={profile?.display_name ?? ""} maxLength={80} required /></div>
+          <SubmitButton>Save name</SubmitButton>
+        </form>
+        <div className="mt-4"><CollectionNotice>Your name is shown to everyone in your workspaces.</CollectionNotice></div>
+      </section>
+
+      <section aria-labelledby="s-privacy" className="max-w-3xl rounded-lg border border-rule bg-surface p-5">
+        <h2 id="s-privacy" className="text-lg font-bold">Privacy and your data</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          Read what SceneSet stores and why in the <Link href="/privacy" className="font-semibold text-primary underline">privacy notice</Link>. You can correct your name above,
+          and delete your account and data below.
+        </p>
+      </section>
+
+      {isOwner && (
+        <section aria-labelledby="s-delws" className="max-w-3xl rounded-lg border border-danger bg-surface p-5">
+          <h2 id="s-delws" className="text-lg font-bold">Delete this workspace</h2>
+          <p className="mt-1 text-sm text-ink-2">Permanently deletes the workspace and everything in it for every member: events, tasks, budgets, suppliers, guests, schedules, layouts and notes. This cannot be undone.</p>
+          <form action={deleteWorkspace} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end" aria-label="Delete this workspace">
+            <input type="hidden" name="ws" value={ws} />
+            <div className="flex-1"><TextField name="confirm" label={`Type the workspace name (${workspace.name}) to confirm`} autoComplete="off" required /></div>
+            <SubmitButton variant="danger" pendingText="Deleting…">Delete workspace</SubmitButton>
+          </form>
+        </section>
+      )}
+
+      <section aria-labelledby="s-delacct" className="max-w-3xl rounded-lg border border-danger bg-surface p-5">
+        <h2 id="s-delacct" className="text-lg font-bold">Delete your account</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          This permanently deletes your sign-in, your profile and your membership of every workspace. Workspaces where you are the only member are deleted with
+          you. In workspaces shared with others, the plan stays; notes you wrote remain with the author shown as &ldquo;Former member&rdquo;, and tasks you created
+          keep no creator. This cannot be undone.
+        </p>
+        {blockers.length > 0 && (
+          <div role="alert" className="mt-3 rounded-md bg-warn-tint p-3 text-sm text-warn-ink">
+            <p className="font-semibold">Deletion is blocked until you hand over {blockers.length === 1 ? "this workspace" : "these workspaces"}:</p>
+            <ul className="mt-1 list-disc pl-5">
+              {blockers.map((b) => (
+                <li key={b.workspace_id}>{b.name}: you are the only owner and {Number(b.other_members)} other member{Number(b.other_members) === 1 ? " uses" : "s use"} it.{" "}
+                  <Link href={`/w/${b.workspace_id}/settings`} className="font-semibold underline">Open its settings</Link></li>
+              ))}
+            </ul>
+            <p className="mt-1">Make another member an owner (Members, above), or delete the workspace.</p>
+          </div>
+        )}
+        <form action={deleteAccount} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end" aria-label="Delete your account">
+          <input type="hidden" name="ws" value={ws} />
+          <div className="flex-1"><TextField name="confirm" type="email" label="Type your email address to confirm" autoComplete="off" required /></div>
+          <SubmitButton variant="danger" pendingText="Deleting…">Delete my account</SubmitButton>
+        </form>
       </section>
     </>
   );

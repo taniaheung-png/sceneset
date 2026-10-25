@@ -409,3 +409,11 @@ Self-promotion and removing/demoting the last owner are rejected in SQL. Members
 | USER isolation | R27 | RLS, RPC | 2→8 | Direct SQL + route cross-tenant tests |
 | L7 pp.55–71 | notes only | `PRD.md §1` | 0 | Formula recalculated (347) |
 
+
+## Phase 6 implementation decisions
+
+- **Readiness (R17).** Eleven equally weighted checks: venue chosen, budget set up, within budget, tasks planned, nothing overdue, supplier quotes decided, guest list started, attendance within capacity, running order drafted, no same-person clashes, venue layout saved. Percentage is checks passed divided by 11. A check that needs data fails until the data exists, so an empty event scores 0% and 100% needs every check. It is a planning aid, not a safety, legal or compliance certification, and the page says so.
+- **Layout (R15).** Objects are stored in centimetres inside the venue rectangle. The browser edits a draft and saves it in one transaction through the `save_layout` function, which refuses a stale item, a role without edit rights, or an object outside the venue. A venue cannot be made smaller than the objects placed on it, and an event cannot be moved to a venue its layout does not fit.
+- **Demo (R19).** `/demo` is a fixed fictional dataset passed through the same `buildPlan` rules as the real app, with no login and no writes. A signed-in owner or organiser can load or reset one editable sample event in their own workspace. Reset deletes only rows flagged `demo` in that workspace. There is no automatic purge of sample data; it is removed by resetting, deleting the event, or deleting the workspace.
+- **Deletion (R24).** A workspace is deleted by an owner after typing its name. An account is deleted after typing the account email. Deletion is blocked while the user is the only owner of a workspace that has other members; they must transfer ownership or delete the workspace first. Workspaces where the user is the only member are deleted with the account. Records in shared workspaces stay, with the author reference cleared. Account deletion uses the server-only secret key after all checks pass.
+- **Print (R18).** The summary route is the printable plan. Navigation and controls are hidden in print, tables wrap, and sections avoid splitting rows. This is browser print only; there is no PDF export feature.

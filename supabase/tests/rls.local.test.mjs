@@ -314,10 +314,153 @@ describe("accept quote -> budget line (migration 005)", () => {
   });
 });
 
+describe("venue fit, atomic layout save, sample event, account deletion (migration 006)", () => {
+  let venue, small, event;
+  const ONE = "2026-12-01T10:00Z", TWO = "2026-12-01T12:00Z";
+  const items = async () => (await as(U.bob, "select id, label, x_cm, y_cm, w_cm, h_cm, updated_at::text as version from public.layout_items where event_id=$1 order by label", [event])).rows;
+  const save = (user, ups, dels = []) => as(user, "select public.save_layout($1, $2::jsonb, $3::uuid[]) as n", [event, JSON.stringify(ups), dels]);
+
+  test("setup: a venue, an event on it, and one item flush with the corner", async () => {
+    venue = (await as(U.bob, "insert into public.venues (workspace_id,name,width_cm,depth_cm) values ($1,'Fit Hall',1000,800) returning id", [ws1])).rows[0].id;
+    small = (await as(U.bob, "insert into public.venues (workspace_id,name,width_cm,depth_cm) values ($1,'Tiny Hall',500,500) returning id", [ws1])).rows[0].id;
+    event = (await as(U.bob, "insert into public.events (workspace_id,title,starts_at,ends_at,venue_id) values ($1,'Layout event',$2,$3,$4) returning id", [ws1, ONE, TWO, venue])).rows[0].id;
+    ok(await as(U.bob, "insert into public.layout_items (workspace_id,event_id,kind,label,x_cm,y_cm,w_cm,h_cm) values ($1,$2,'table','Corner',900,700,100,100)", [ws1, event]));
+  });
+  test("a venue cannot be shrunk below a layout item; same size or larger is fine", async () => {
+    denied(await as(U.bob, "update public.venues set width_cm=950 where id=$1", [venue]), "23514");
+    denied(await as(U.bob, "update public.venues set depth_cm=790 where id=$1", [venue]), "23514");
+    ok(await as(U.bob, "update public.venues set width_cm=1200, depth_cm=900 where id=$1", [venue]));
+    ok(await as(U.bob, "update public.venues set width_cm=1000, depth_cm=800 where id=$1", [venue]));
+  });
+  test("an event cannot be attached to a venue its layout does not fit; a larger one or none is fine", async () => {
+    denied(await as(U.bob, "update public.events set venue_id=$1 where id=$2", [small, event]), "23514");
+    ok(await as(U.bob, "update public.events set venue_id=null where id=$1", [event]));
+    ok(await as(U.bob, "update public.events set venue_id=$1 where id=$2", [venue, event]));
+  });
+  test("deleting a venue keeps the event and its saved layout items", async () => {
+    const v2 = (await as(U.bob, "insert into public.venues (workspace_id,name,width_cm,depth_cm) values ($1,'Temp Hall',1000,800) returning id", [ws1])).rows[0].id;
+    ok(await as(U.bob, "update public.events set venue_id=$1 where id=$2", [v2, event]));
+    ok(await as(U.bob, "delete from public.venues where id=$1", [v2]));
+    assert.equal((await as(U.bob, "select venue_id from public.events where id=$1", [event])).rows[0].venue_id, null);
+    assert.equal((await items()).length, 1);
+    ok(await as(U.bob, "update public.events set venue_id=$1 where id=$2", [venue, event])); // reattach
+  });
+  test("save_layout applies inserts, updates and deletes together", async () => {
+    const [corner] = await items();
+    const r = await save(U.bob, [{ id: corner.id, version: corner.version, kind: "table", label: "Corner moved", x: 800, y: 600, w: 100, h: 100 }, { kind: "stage", label: "New stage", x: 0, y: 0, w: 300, h: 200 }]);
+    ok(r);
+    assert.equal(Number(r.rows[0].n), 2);
+    const now = await items();
+    assert.deepEqual(now.map((i) => i.label), ["Corner moved", "New stage"]);
+    assert.equal(Number(now[0].x_cm), 800);
+    const stage = now[1];
+    ok(await save(U.bob, [], [stage.id]));
+    assert.equal((await items()).length, 1);
+  });
+  test("a stale item version rejects the whole save and changes nothing", async () => {
+    const [it] = await items();
+    const r = await save(U.bob, [{ kind: "booth", label: "Should not appear", x: 0, y: 0, w: 100, h: 100 }, { id: it.id, version: "2000-01-01 00:00:00+00", kind: "table", label: "Stale", x: 0, y: 0, w: 100, h: 100 }]);
+    denied(r, "P0001");
+    assert.deepEqual((await items()).map((i) => i.label), ["Corner moved"]);
+  });
+  test("an out-of-bounds item rejects the whole save (atomic)", async () => {
+    denied(await save(U.bob, [{ kind: "booth", label: "Fine", x: 0, y: 0, w: 100, h: 100 }, { kind: "booth", label: "Too far", x: 950, y: 0, w: 100, h: 100 }]), "23514");
+    assert.deepEqual((await items()).map((i) => i.label), ["Corner moved"]);
+  });
+  test("collaborators and outsiders cannot save a layout", async () => {
+    denied(await save(U.carol, [{ kind: "booth", label: "x", x: 0, y: 0, w: 10, h: 10 }]), "42501");
+    denied(await save(U.dave, [{ kind: "booth", label: "x", x: 0, y: 0, w: 10, h: 10 }]), "P0002");
+    denied(await save(null, []), "42501"); // anonymous has no EXECUTE at all
+  });
+
+  describe("sample event", () => {
+    let demoEv, plainEv, demoSupplier;
+    const count = async (table, ev) => Number((await as(U.bob, `select count(*)::int as n from public.${table} where event_id=$1`, [ev])).rows[0].n);
+    test("only organisers and owners of the target workspace can load it", async () => {
+      denied(await as(U.carol, "select public.reset_demo($1)", [ws1]), "42501");
+      denied(await as(U.dave, "select public.reset_demo($1)", [ws1]), "42501");
+      denied(await as(U.bob, "select public.reset_demo($1)", [ws2]), "42501");
+      denied(await as(null, "select public.reset_demo($1)", [ws1]), "42501");
+    });
+    test("creates a complete, consistent fictional event", async () => {
+      plainEv = event;
+      const r = await as(U.bob, "select public.reset_demo($1) as ev", [ws1]);
+      ok(r);
+      demoEv = r.rows[0].ev;
+      const counts = Object.fromEntries(await Promise.all(["tasks", "guests", "schedule_entries", "layout_items", "quotes", "budget_items", "notes"].map(async (t) => [t, await count(t, demoEv)])));
+      assert.deepEqual(counts, { tasks: 8, guests: 12, schedule_entries: 8, layout_items: 11, quotes: 5, budget_items: 5, notes: 1 });
+      const e = (await as(U.bob, "select title, demo, capacity, currency, timezone, venue_id from public.events where id=$1", [demoEv])).rows[0];
+      assert.equal(e.demo, true);
+      assert.equal(e.capacity, 150);
+      assert.ok(e.venue_id);
+      const accepted = (await as(U.bob, "select count(*)::int as n from public.quotes q join public.budget_items b on b.quote_id=q.id where q.event_id=$1 and q.status='accepted'", [demoEv])).rows[0].n;
+      assert.equal(accepted, 2);
+      const over = (await as(U.bob, "select count(*)::int as n from public.budget_items where event_id=$1 and paid_minor>committed_minor", [demoEv])).rows[0].n;
+      assert.equal(over, 0);
+      demoSupplier = (await as(U.bob, "select id from public.suppliers where workspace_id=$1 and demo limit 1", [ws1])).rows[0].id;
+    });
+    test("clients cannot set the demo flag themselves", async () => {
+      denied(await as(U.bob, "insert into public.events (workspace_id,title,starts_at,ends_at,demo) values ($1,'x',$2,$3,true)", [ws1, ONE, TWO]), "42501");
+      denied(await as(U.bob, "update public.events set demo=true where id=$1", [plainEv]), "42501");
+    });
+    test("reset replaces ONLY the sample event; the user's own event, suppliers and the other workspace are untouched", async () => {
+      const before2 = Number((await as(U.dave, "select count(*)::int as n from public.events")).rows[0].n);
+      const ownQuote = (await as(U.bob, "insert into public.quotes (workspace_id,event_id,supplier_id,amount_minor) values ($1,$2,$3,1000) returning id", [ws1, plainEv, demoSupplier])).rows[0].id;
+      const r = await as(U.bob, "select public.reset_demo($1) as ev", [ws1]);
+      ok(r);
+      assert.notEqual(r.rows[0].ev, demoEv);
+      const demos = (await as(U.bob, "select count(*)::int as n from public.events where workspace_id=$1 and demo", [ws1])).rows[0].n;
+      assert.equal(demos, 1);
+      assert.equal((await as(U.bob, "select count(*)::int as n from public.events where id=$1", [plainEv])).rows[0].n, 1);
+      assert.equal((await as(U.bob, "select count(*)::int as n from public.quotes where id=$1", [ownQuote])).rows[0].n, 1); // supplier in use is kept
+      assert.equal(Number((await as(U.dave, "select count(*)::int as n from public.events")).rows[0].n), before2);
+      assert.equal(await count("tasks", r.rows[0].ev), 8); // fresh, not doubled
+    });
+  });
+
+  describe("account deletion policy", () => {
+    let erin, frank, ws3;
+    test("setup: two users and a workspace they share", async () => {
+      erin = (await db.query("insert into auth.users (email) values ('erin@example.test') returning id")).rows[0].id;
+      frank = (await db.query("insert into auth.users (email) values ('frank@example.test') returning id")).rows[0].id;
+      ws3 = (await as(erin, "select public.create_workspace('Shared Co') as id")).rows[0].id;
+      ok(await as(erin, "select public.add_workspace_member($1,'frank@example.test','collaborator')", [ws3]));
+      ok(await as(erin, "insert into public.events (workspace_id,title,starts_at,ends_at) values ($1,'Erin event',$2,$3)", [ws3, ONE, TWO]));
+      ok(await as(erin, "insert into public.notes (workspace_id,event_id,body) select $1, id, 'my note' from public.events where workspace_id=$1", [ws3]));
+    });
+    test("a sole owner with other members is blocked, and nothing is removed", async () => {
+      const b = await as(erin, "select * from public.account_deletion_blockers()");
+      assert.equal(b.rows.length, 1);
+      assert.equal(b.rows[0].name, "Shared Co");
+      assert.equal(Number(b.rows[0].other_members), 1);
+      assert.equal((await as(erin, "select public.remove_my_sole_workspaces() as n")).rows[0].n, 0);
+      await assert.rejects(db.query("delete from auth.users where id=$1", [erin]), /at least one owner/);
+      assert.equal((await as(frank, "select count(*)::int as n from public.workspaces where id=$1", [ws3])).rows[0].n, 1);
+    });
+    test("members who are not the sole owner are not blocked", async () => {
+      assert.equal((await as(frank, "select * from public.account_deletion_blockers()")).rows.length, 0);
+    });
+    test("after transferring ownership the account can be deleted; shared records stay; authorship is cleared", async () => {
+      ok(await as(erin, "select public.set_member_role($1,$2,'owner')", [ws3, frank]));
+      assert.equal((await as(erin, "select * from public.account_deletion_blockers()")).rows.length, 0);
+      ok(await db.query("delete from auth.users where id=$1", [erin]));
+      assert.equal((await as(frank, "select count(*)::int as n from public.events where workspace_id=$1", [ws3])).rows[0].n, 1);
+      const note = (await as(frank, "select author_id from public.notes where workspace_id=$1", [ws3])).rows[0];
+      assert.equal(note.author_id, null);
+      assert.equal((await as(frank, "select count(*)::int as n from public.profiles where id=$1", [erin])).rows[0].n, 0);
+    });
+    test("a user who is the only member has their workspace removed with the account", async () => {
+      assert.equal((await as(frank, "select public.remove_my_sole_workspaces() as n")).rows[0].n, 1);
+      assert.equal((await db.query("select count(*)::int as n from public.workspaces where id=$1", [ws3])).rows[0].n, 0);
+      ok(await db.query("delete from auth.users where id=$1", [frank]));
+    });
+  });
+});
+
 describe("deletion", () => {
   test("a member can leave; their assigned tasks become unassigned", async () => {
     ok(await as(U.carol, "select public.remove_member($1,$2)", [ws1, U.carol]));
-    const r = await as(U.alice, "select count(*)::int as n from public.tasks where assignee_id is not null and workspace_id=$1", [ws1]);
+    const r = await as(U.alice, "select count(*)::int as n from public.tasks where assignee_id=$2 and workspace_id=$1", [ws1, U.carol]);
     assert.equal(r.rows[0].n, 0);
     none(await as(U.carol, "select * from public.events where workspace_id=$1", [ws1]));
   });

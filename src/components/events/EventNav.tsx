@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 export function EventTabs({ base, items }: { base: string; items: { slug: string; label: string }[] }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Event sections" className="-mb-px flex flex-wrap gap-1 border-b border-rule">
+    <nav aria-label="Event sections" className="no-print -mb-px flex flex-wrap gap-1 border-b border-rule">
       {items.map(({ slug, label }) => {
         const href = slug ? `${base}/${slug}` : base;
         const current = pathname === href;
@@ -32,7 +32,7 @@ export function EventSwitcher({ ws, current, events }: { ws: string; current: st
   if (events.length < 2) return null;
   const section = pathname.split(`/events/${current}`)[1] ?? "";
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="no-print flex items-center gap-2 text-sm">
       <label htmlFor="event-switch" className="font-semibold">Switch event</label>
       <select
         id="event-switch"

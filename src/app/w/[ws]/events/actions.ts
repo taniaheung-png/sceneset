@@ -67,6 +67,25 @@ async function guard(fd: FormData) {
   return { ws, ev, supabase: await createClient() };
 }
 
+/**
+ * Loads (or resets) the fictional sample event in THIS workspace. Needs sign-in and an owner/organiser role;
+ * the database function removes only previously loaded sample rows here and never touches other data.
+ */
+export async function loadSampleEvent(fd: FormData) {
+  const { ws, supabase } = await guardWs(fd);
+  const { data, error } = await supabase.rpc("reset_demo", { ws });
+  revalidatePath(`/w/${ws}/events`, "layout");
+  if (error || !data) redirect(`/w/${ws}/events?m=${error?.code === "42501" ? "forbidden" : "sample-failed"}`);
+  redirect(`/w/${ws}/events/${data}?m=sample`);
+}
+
+async function guardWs(fd: FormData) {
+  const ws = field(fd, "ws");
+  if (!isUuid(ws)) redirect("/app");
+  await requireUser(`/w/${ws}/events`);
+  return { ws, supabase: await createClient() };
+}
+
 export async function setArchived(fd: FormData) {
   const { ws, ev, supabase } = await guard(fd);
   const archive = field(fd, "archive") === "1";

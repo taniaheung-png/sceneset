@@ -121,6 +121,73 @@ button:disabled,
   cursor: not-allowed;
 }
 
+/*
+ * Print: the event summary (and the layout page) print as plain documents. Navigation, buttons and forms carry
+ * `.no-print` or are an <aside>; sections stay whole; tables wrap instead of scrolling; nothing is clipped.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+  .no-print,
+  aside {
+    display: none !important;
+  }
+  .lg\:flex {
+    display: block !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  * {
+    box-shadow: none !important;
+  }
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+  table {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 9.5pt;
+    border-collapse: collapse;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  svg,
+  figure,
+  .print-section > h2,
+  [data-check] {
+    break-inside: avoid;
+  }
+  .print-section {
+    break-inside: auto;
+  }
+  th,
+  td {
+    overflow-wrap: break-word;
+  }
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  .bg-sunken,
+  .bg-primary-tint {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
