@@ -13,9 +13,9 @@ export default async function NewEvent({ params }: PageProps<"/w/[ws]/events/new
   if (role === "collaborator") {
     return (
       <>
-        <PageHeader event={workspace.name} title="New event" />
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">Only organisers and owners can create events</h2>
+        <PageHeader event={workspace.name} title="New event" intro="A few details now. Everything else can be added as you plan." />
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">Only organisers and owners can create events</h2>
           <p className="mt-2 text-ink-2">Ask a workspace owner to change your role if you need to.</p>
           <div className="mt-4"><ButtonLink href={`/w/${ws}/events`} variant="secondary">Back to events</ButtonLink></div>
         </section>
@@ -26,7 +26,7 @@ export default async function NewEvent({ params }: PageProps<"/w/[ws]/events/new
   const { data } = await supabase.from("venues").select("id, name").eq("workspace_id", ws).order("name");
   return (
     <>
-      <PageHeader event={workspace.name} title="New event" />
+      <PageHeader event={workspace.name} title="New event" intro="A few details now. Everything else can be added as you plan." />
       <EventForm ws={ws} initial={{}} venues={data ?? []} cancelHref={`/w/${ws}/events`} />
     </>
   );

@@ -75,7 +75,7 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
       {error && <Banner tone="danger">We could not load tasks. Refresh to try again.</Banner>}
 
       {canManage ? (
-        <form action={createTask} className="flex flex-wrap items-end gap-3 rounded-lg border border-rule bg-surface p-4" aria-label="Add a task">
+        <form action={createTask} className="flex flex-wrap items-end gap-3 panel p-4" aria-label="Add a task">
           {hidden()}
           <div className="min-w-56 flex-1"><TextField name="title" label="New task" maxLength={200} required /></div>
           <SelectField name="assignee" label="Assign to" defaultValue=""><option value="">Unassigned</option>{memberOptions}</SelectField>
@@ -101,13 +101,13 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
       {filtering && <p className="text-sm text-ink-2" role="status">Showing {shown.length} of {all.length} tasks.</p>}
 
       {all.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No tasks yet</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No tasks yet</h2>
           <p className="mt-2 text-ink-2">{canManage ? "Add the first task above, for example “Confirm the stage supplier”." : "An organiser will add tasks here."}</p>
         </section>
       ) : filtering && shown.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No tasks match</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No tasks match</h2>
           <p className="mt-2 text-ink-2">Nothing fits those filters. Clear them to see the whole board.</p>
           <div className="mt-4"><ButtonLink href={`/w/${ws}/events/${ev}/tasks`} variant="secondary">Clear filters</ButtonLink></div>
         </section>
@@ -171,8 +171,8 @@ export default async function Tasks({ params, searchParams }: PageProps<"/w/[ws]
         </div>
       )}
 
-      <section aria-labelledby="notes-h" className="rounded-lg border border-rule bg-surface p-5">
-        <h2 id="notes-h" className="text-lg font-bold">Notes</h2>
+      <section aria-labelledby="notes-h" className="panel p-5">
+        <h2 id="notes-h" className="panel-title">Notes</h2>
         <p className="text-sm text-ink-2">Shared with everyone in this workspace.</p>
         <form action={addNote} className="mt-3 flex max-w-2xl flex-col gap-3" aria-label="Add a note">
           {hidden()}

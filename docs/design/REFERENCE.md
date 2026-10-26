@@ -47,3 +47,19 @@ Colour: `--paper #f7f4ed`, `--surface #fffefa`, `--sunken #f1efe8`, `--rule #e9e
 Shape: card 11 px, row 9 px, button 8 px, field 7 px, pill 999 px. Shadow: `0 4px 14px rgb(34 50 63 / 0.03)`. Layout: sidebar 15.5 rem (248 px), top bar 66 px, content 1210 px.
 Type: Inter (variable). h1 `clamp(26px, 2.5vw, 32px)` weight 650, tracking -0.03em; panel title 15 px weight 700; UI text 14 px; caption 12 px; eyebrow 11.5 px caps +0.14em; metric `clamp(24px, 2vw, 28px)` weight 650.
 Shared pieces: `.panel`, `.panel-head/title/cap/body`, `.eyebrow`, `.page-title`, `.page-intro`, `.metric*`, `.tile*`, `.pill*`, `.date-tile`, `.row-card`, `.navy-card` (CSS); `AppShell`, `PageHeader`, `Brand`, `StatusChip`, `Button`, `CueTab` (date tile), `Field` (components).
+
+## 5. How the system reaches every screen (final state)
+
+- **Shared first.** Tokens, `.panel`, `.metric`, `.pill`, `.date-tile`, `.eyebrow`, `.page-title`, `.page-intro`, `.row-card`, `.navy-card` and the base table style live in `src/app/globals.css`. About 100 hand-written card, heading and table-header class strings across the pages were replaced by those shared classes, so a screen looks right because it uses the shared piece, not because it copies a style.
+- **Frame.** `AppShell` (sidebar, top bar, breadcrumbs, phone drawer) wraps every signed-in page and the public demo. The site header and footer, the sign-in pages, onboarding, the 404 page and the error page use the same brand mark, eyebrow, title and card.
+- **Operational pages** (events, new and edit event, tasks and notes, suppliers and quotes, budget, guests, run of show, venue layout, print summary, settings, plan, test checkout): same page heading pattern (coral label, large navy title, one line of intro, actions at the right), panels, pale table headers with small caps, pills for status, navy primary buttons. Their forms, tables and actions are the existing working ones.
+- **Landing page:** coral label above the headline, product preview as a panel with a date tile, feature list as tiled cards with line icons (the sequence of steps keeps its numbers because it is a sequence), plans as panels.
+- **States.** Empty (each view invites an action), validation (errors beside the field; typed values kept), permission-restricted (read-only views say who can edit), dialog (confirm), error page (never claims a save), loading (plain text), not found. All are in `docs/design/after/` and are exercised by `npm run test:e2e:design` and the phase suites.
+- **Print.** The application frame is hidden in print and the content is full width; the printed summary keeps its tables and the venue plan whole.
+
+## 6. Open items
+
+- No sidebar count badges (extra queries per page; not requested).
+- Text is larger than the reference's by design, so a side-by-side comparison at the same pixel width looks less airy than the reference.
+- Screen-reader, real-touch-device and non-Chromium checks were not done.
+- The reference's "All changes saved" status and its logo were deliberately not copied.

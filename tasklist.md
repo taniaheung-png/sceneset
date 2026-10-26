@@ -143,6 +143,18 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 - [x] **P8.12** (R30) Concise future-upgrade list in README. Gate: matches `PRD.md` §2.5.
 - [x] **P8.13** Final build/type/lint/test run and handover summary; mark deployed checks as not run unless run. Checkpoint report. *Final pass recorded in `docs/QA.md`. Deployed-site, availability-period and real-inbox checks were NOT run and remain unticked in `README.md` section 8 and P2.13, P2.15, P2.16.*
 
+
+## Redesign: reference-led design pass (after Phase 8; no new features, routes or backend changes)
+
+- [x] **D1** Inspect the supplied reference site (desktop and phone, other views, computed styles and stylesheet); record observed rules, adaptations and assumptions. Gate: `docs/design/REFERENCE.md` and screenshots in `docs/design/reference/`. *Done.*
+- [x] **D2** Shared tokens and primitives (colour, Inter, radii, shadow, panel, metric, pill, date tile, buttons, fields, table header, focus ring). Gate: `npm run contrast` (30 pairs) and no behaviour change. *Done.*
+- [x] **D3** Application frame (sidebar, top bar, breadcrumbs, event navigation, plan card, phone drawer) and the event dashboard. Gate: Phase 2 and 3 suites with original assertions. *Done (checkpoint A).*
+- [x] **D4** Apply to every remaining signed-in screen: events, new and edit event, tasks and notes, suppliers and quotes, budget, guests, run of show, venue planner, print summary, settings, plan, test checkout, onboarding. Gate: screenshots at 1440 and 375 px reviewed; Phase 3 to 8 suites. *Done (checkpoint B+C).*
+- [x] **D5** Public pages: landing, pricing, privacy, sign-in and password pages, 404 and error pages, and the read-only demo (same frame as the app). Gate: screenshots reviewed; `npm run smoke`; Phase 6 demo step. *Done.*
+- [x] **D6** States: empty, validation, permission-restricted, dialog, error, loading, not found. Gate: `docs/design/after/` and `npm run test:e2e:design`. *Done.*
+- [x] **D7** Accessibility and interaction audit: phone drawer, keyboard order and focus rings, reduced motion, 44 px targets, landmarks, print output, planner at phone and desktop width. Gate: `npm run test:e2e:design` and the Phase 8 audit. *Done; screen readers and real touch devices not tested.*
+- [x] **D8** Impeccable mechanical detector over the changed files (0 findings), lint, typecheck, production build, sequential browser regression pass. Gate: `docs/QA.md` "Design redesign". *Done.*
+
 ---
 
 ## Deferred (post-launch backlog — not MVP)

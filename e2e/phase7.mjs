@@ -52,6 +52,8 @@ const newPage = async () => {
 const open = async (page, path) => {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Workspace pages stream: the loading fallback shows first and the page replaces it moments later. Read nothing before it has.
+  await page.waitForFunction(() => ![...document.querySelectorAll("[role=status]")].some((e) => e.textContent.includes("Loading…")) && !document.querySelector('div[hidden][id^="S:"]'));
 };
 const signIn = async (page, role, next) => {
   await open(page, next ? `/login?next=${encodeURIComponent(next)}` : "/login");
@@ -258,7 +260,7 @@ try {
   }, { needs008: true });
   await step("everything still works on Free: every view of the one event opens, and a task can be added", async () => {
     const base = `/w/${ws}/events/${evA}`;
-    for (const [path, heading] of [["", /Readiness/], ["/tasks", /Tasks|Task board/], ["/suppliers", /Suppliers/], ["/budget", /Budget/], ["/guests", /Guests/], ["/schedule", /Run of show|Running order/], ["/layout", /layout/i], ["/summary", /Printed from SceneSet/]]) {
+    for (const [path, heading] of [["", /Readiness/], ["/tasks", /New task/], ["/suppliers", /Supplier directory|No suppliers yet/], ["/budget", /Totals for all budget lines|Budget/], ["/guests", /Summary of all guests|Guests/], ["/schedule", /All times are in|Add an entry|No running order yet/], ["/layout", /layout/i], ["/summary", /Printed from SceneSet/]]) {
       await open(owner, base + path);
       const t = await owner.locator("main").innerText();
       assert(heading.test(t), `${path || "dashboard"}: ${t.slice(0, 120)}`);

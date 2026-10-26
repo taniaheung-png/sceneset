@@ -9,7 +9,7 @@ const p = "mt-2 text-ink-2";
 export default function Privacy() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <h1 className="font-display text-4xl font-bold">Privacy</h1>
+      <h1 className="page-title">Privacy</h1>
       <p className={p}>
         SceneSet is a prototype for planning events. This page says, in plain words, what it stores, why, who can see it, how long it is
         kept and how to delete it. It is a design for good practice and has <strong>not</strong> been legally reviewed or certified under

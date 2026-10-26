@@ -14,7 +14,7 @@ const referrals = [
 export default function Pricing() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <h1 className="font-display text-4xl font-bold">Pricing</h1>
+      <h1 className="page-title">Pricing</h1>
       <p className="mt-2 max-w-2xl text-lg text-ink-2">Start free. Upgrade one event, or go monthly if you organise often.</p>
       <p role="note" className="mt-4 max-w-2xl rounded-md bg-warn-tint p-3 text-sm text-warn-ink" data-price-note>
         <strong>Provisional prices.</strong> They are unvalidated hypotheses for this prototype, not offers. Paid plans use a simulated checkout only. {TEST_NOTE}
@@ -22,8 +22,8 @@ export default function Pricing() {
 
       <ul className="mt-8 grid gap-5 md:grid-cols-3">
         {PLANS.map((p) => (
-          <li key={p.id} className="flex flex-col rounded-lg border border-rule bg-surface p-5" data-plan-card={p.id}>
-            <h2 className="text-lg font-bold">{p.name}</h2>
+          <li key={p.id} className="flex flex-col panel p-5" data-plan-card={p.id}>
+            <h2 className="panel-title">{p.name}</h2>
             <p className="num mt-2 text-3xl font-bold">{p.price}</p>
             <p className="text-sm text-ink-2">{p.cadence}</p>
             <ul className="mt-4 flex flex-col gap-2 border-t border-rule pt-4 text-sm">
@@ -47,7 +47,7 @@ export default function Pricing() {
       </div>
 
       <section aria-labelledby="referrals" className="mt-14 rounded-lg border border-dashed border-control bg-sunken p-5" data-referrals>
-        <h2 id="referrals" className="text-lg font-bold">Supplier suggestions: a concept</h2>
+        <h2 id="referrals" className="panel-title">Supplier suggestions: a concept</h2>
         <p className="mt-1 max-w-2xl text-sm font-semibold text-ink-2">Illustrative — not a live marketplace. These suppliers are fictional.</p>
         <p className="mt-1 max-w-2xl text-sm text-ink-2">
           One day SceneSet could suggest suppliers that fit your event. Nothing here can be booked, contacted or bought, and SceneSet earns nothing from it.

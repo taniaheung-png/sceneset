@@ -48,6 +48,8 @@ const newPage = async () => {
 const open = async (page, path) => {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Workspace pages stream: the loading fallback shows first and the page replaces it moments later. Read nothing before it has.
+  await page.waitForFunction(() => ![...document.querySelectorAll("[role=status]")].some((e) => e.textContent.includes("Loading…")) && !document.querySelector('div[hidden][id^="S:"]'));
 };
 const signIn = async (page, role, next) => {
   await open(page, next ? `/login?next=${encodeURIComponent(next)}` : "/login");
@@ -421,8 +423,8 @@ try {
     assert((await owner.evaluate(() => location.hash)) === "#main", "the skip link does not jump to main");
     for (let i = 0; i < 12; i++) {
       await owner.keyboard.press("Tab");
-      const o = await owner.evaluate(() => { const s = getComputedStyle(document.activeElement); return { style: s.outlineStyle, width: parseFloat(s.outlineWidth), tag: document.activeElement.tagName, shadow: s.boxShadow }; });
-      if (o.tag !== "BODY" && !((o.style !== "none" && o.width > 0) || o.shadow !== "none")) bad.push(`dashboard Tab stop ${i + 1} has no visible focus`);
+      const o = await owner.evaluate(() => { const el = document.activeElement; const s = getComputedStyle(el); return { style: s.outlineStyle, width: parseFloat(s.outlineWidth), tag: el.tagName, shadow: s.boxShadow, name: (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 30), cls: String(el.className).slice(0, 40), inNav: !!el.closest("#app-nav") }; });
+      if (o.tag !== "BODY" && o.tag !== "NEXTJS-PORTAL" /* the Next.js development overlay, absent from production builds */ && !((o.style !== "none" && o.width > 0) || o.shadow !== "none")) bad.push(`dashboard Tab stop ${i + 1} has no visible focus: <${o.tag}> "${o.name}" class="${o.cls}" inNav=${o.inNav} outline=${o.style} ${o.width}px shadow=${o.shadow.slice(0, 40)}`);
     }
     assert(bad.length === 0, bad.slice(0, 12).join("; ") + (bad.length > 12 ? ` (+${bad.length - 12} more)` : ""));
   });

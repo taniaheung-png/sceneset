@@ -13,7 +13,7 @@ export function EventSwitcher({ ws, current, events }: { ws: string; current: st
   const section = pathname.split(`/events/${current}`)[1] ?? "";
   return (
     <div className="no-print flex flex-col gap-1 text-[0.8125rem]">
-      <label htmlFor="event-switch" className="font-semibold text-ink-2">Switch event</label>
+      <label htmlFor="event-switch" className="sr-only">Switch event</label>
       <select
         id="event-switch"
         value={current}
@@ -32,7 +32,7 @@ export function WorkspaceSwitcher({ current, workspaces }: { current: string; wo
   if (workspaces.length < 2) return null;
   return (
     <div className="flex flex-col gap-1 text-[0.8125rem]">
-      <label htmlFor="ws-switch" className="font-semibold text-ink-2">Switch workspace</label>
+      <label htmlFor="ws-switch" className="sr-only">Switch workspace</label>
       <select
         id="ws-switch"
         value={current}

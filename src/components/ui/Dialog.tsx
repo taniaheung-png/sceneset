@@ -33,9 +33,9 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       onClose={onClose}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg bg-surface p-6 text-ink shadow-2 backdrop:bg-ink/50"
+      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-[0.8125rem] border border-white/70 bg-surface p-5 text-ink shadow-2 backdrop:bg-ink/40 sm:p-6"
     >
-      <h2 id={titleId} className="text-xl font-bold">
+      <h2 id={titleId} className="text-[1.0625rem] font-bold tracking-tight text-navy">
         {title}
       </h2>
       <div className="mt-3">{children}</div>

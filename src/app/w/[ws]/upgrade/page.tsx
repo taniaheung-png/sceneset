@@ -53,15 +53,15 @@ export default async function Upgrade({ params, searchParams }: PageProps<"/w/[w
 
   return (
     <>
-      <PageHeader event={workspace.name} title="Plan and test upgrades" />
+      <PageHeader event={workspace.name} title="Plan and test upgrades" intro="Your plan, its limits, and a simulated upgrade. Nothing is charged." />
       <p role="note" className="rounded-md bg-warn-tint p-3 text-sm font-medium text-warn-ink" data-test-mode>
         {TEST_NOTE} {PRICE_NOTE}
       </p>
       {!enabled && <Banner tone="info">The test checkout is switched off on this server, so plans cannot be changed here.</Banner>}
       {msg && <Banner tone={msg[0]}>{msg[1]}</Banner>}
 
-      <section aria-labelledby="u-now" className="rounded-lg border border-rule bg-surface p-5" data-plan={ent.tier}>
-        <h2 id="u-now" className="text-lg font-bold">Current plan</h2>
+      <section aria-labelledby="u-now" className="panel p-5" data-plan={ent.tier}>
+        <h2 id="u-now" className="panel-title">Current plan</h2>
         <p className="mt-1 text-base font-semibold">{ent.label}</p>
         <dl className="num mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div data-usage="events">
@@ -85,8 +85,8 @@ export default async function Upgrade({ params, searchParams }: PageProps<"/w/[w
 
       <ul className="grid gap-5 md:grid-cols-3">
         {PLANS.map((p) => (
-          <li key={p.id} className="flex min-w-0 flex-col rounded-lg border border-rule bg-surface p-5" data-plan-card={p.id}>
-            <h2 className="text-lg font-bold">{p.name}</h2>
+          <li key={p.id} className="flex min-w-0 flex-col panel p-5" data-plan-card={p.id}>
+            <h2 className="panel-title">{p.name}</h2>
             <p className="num mt-2 text-3xl font-bold">{p.price}</p>
             <p className="text-sm text-ink-2">{p.cadence}</p>
             <ul className="mt-4 flex flex-col gap-2 border-t border-rule pt-4 text-sm">
@@ -138,15 +138,15 @@ export default async function Upgrade({ params, searchParams }: PageProps<"/w/[w
       {!isOwner && <p className="text-sm text-ink-2" data-owner-only>Only workspace owners can change test plans. You can see the current plan and limits.</p>}
 
       {isOwner && (
-        <section aria-labelledby="u-log" className="rounded-lg border border-rule bg-surface p-5">
-          <h2 id="u-log" className="text-lg font-bold">Test checkout log</h2>
+        <section aria-labelledby="u-log" className="panel p-5">
+          <h2 id="u-log" className="panel-title">Test checkout log</h2>
           {(log ?? []).length === 0 ? (
             <p className="mt-2 text-sm text-ink-2">No test checkouts yet.</p>
           ) : (
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[28rem] text-left text-sm" data-log>
                 <caption className="sr-only">Recent test checkouts. No card details or money are involved.</caption>
-                <thead className="bg-sunken"><tr><th scope="col" className="px-3 py-2">When</th><th scope="col" className="px-3 py-2">Plan</th><th scope="col" className="px-3 py-2">Result</th></tr></thead>
+                <thead><tr><th scope="col" className="px-3 py-2">When</th><th scope="col" className="px-3 py-2">Plan</th><th scope="col" className="px-3 py-2">Result</th></tr></thead>
                 <tbody>
                   {(log ?? []).map((l) => (
                     <tr key={l.id} className="border-t border-rule" data-outcome={l.outcome}>

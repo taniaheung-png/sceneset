@@ -22,6 +22,7 @@
     "test:e2e:p7": "node --env-file=.env.local e2e/phase7.mjs",
     "test:e2e:p7:off": "node --env-file=.env.local e2e/phase7-disabled.mjs",
     "test:e2e:p8": "node --env-file=.env.local e2e/phase8.mjs",
+    "test:e2e:design": "node --env-file=.env.local e2e/design-audit.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

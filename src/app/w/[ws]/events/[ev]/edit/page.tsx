@@ -15,8 +15,8 @@ export default async function EditEvent({ params }: PageProps<"/w/[ws]/events/[e
   const { event, canManage } = await getEvent(ws, ev);
   if (!canManage) {
     return (
-      <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-        <h2 className="text-lg font-bold">Only organisers and owners can edit events</h2>
+      <section className="max-w-prose panel p-6">
+        <h2 className="panel-title">Only organisers and owners can edit events</h2>
         <div className="mt-4"><ButtonLink href={`/w/${ws}/events/${ev}`} variant="secondary">Back to the dashboard</ButtonLink></div>
       </section>
     );
@@ -44,7 +44,7 @@ export default async function EditEvent({ params }: PageProps<"/w/[ws]/events/[e
       />
 
       <section aria-labelledby="danger" className="max-w-3xl rounded-lg border border-danger bg-surface p-5">
-        <h2 id="danger" className="text-lg font-bold">Archive or delete</h2>
+        <h2 id="danger" className="panel-title">Archive or delete</h2>
         <p className="mt-1 text-sm text-ink-2">
           <strong>Archive</strong> hides the event from the list but keeps everything; you can restore it. <strong>Delete</strong> permanently
           removes the event with its tasks and notes and cannot be undone.

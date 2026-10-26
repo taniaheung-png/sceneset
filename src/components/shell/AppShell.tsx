@@ -91,20 +91,20 @@ export function AppShell({
       <aside
         id="app-nav"
         data-open={open}
-        className="no-print fixed inset-y-0 left-0 z-30 flex w-[var(--sidebar-w)] flex-col border-r border-rule bg-surface px-4 pb-4 pt-7 transition-[transform,visibility] duration-200 max-[820px]:invisible max-[820px]:-translate-x-[101%] max-[820px]:shadow-[12px_0_36px_rgb(25_39_49/0.09)] max-[820px]:data-[open=true]:visible max-[820px]:data-[open=true]:translate-x-0"
+        className="no-print fixed inset-y-0 left-0 z-30 flex w-[var(--sidebar-w)] flex-col overflow-y-auto border-r border-rule bg-surface px-4 pb-4 pt-6 transition-[transform,visibility] duration-200 max-[820px]:invisible max-[820px]:-translate-x-[101%] max-[820px]:shadow-[12px_0_36px_rgb(25_39_49/0.09)] max-[820px]:data-[open=true]:visible max-[820px]:data-[open=true]:translate-x-0"
       >
-        <div className="mb-8 px-2">
+        <div className="mb-6 px-2">
           <Brand tagline={tagline} href={brandHref} />
         </div>
-        <nav aria-label="Workspace" className="flex-1 overflow-y-auto">
+        <nav aria-label="Workspace" className="shrink-0">
           {groups.map((g) => (
-            <div key={g.label} className="mb-4">
+            <div key={g.label} className="mb-3">
               <p className={labelClass}>{g.label}</p>
               <ul className="flex flex-col gap-1">{g.items.map(link)}</ul>
             </div>
           ))}
           {eventNav && eventItems.length > 0 && (
-            <div className="mb-4 border-t border-rule pt-4">
+            <div className="mb-3 border-t border-rule pt-3">
               <p className={labelClass}>{eventNav.label}</p>
               {eventId && eventNav.events.length > 1 && (
                 <div className="mb-2 px-1"><EventSwitcher ws={eventNav.ws} current={eventId} events={eventNav.events.some((e) => e.id === eventId) ? eventNav.events : [{ id: eventId, title: "This event" }, ...eventNav.events]} /></div>
@@ -113,7 +113,7 @@ export function AppShell({
             </div>
           )}
         </nav>
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-auto flex flex-col gap-3 pt-3">
           {switcher}
           {planCard}
           <div className="flex items-center gap-2.5 border-t border-rule pt-4">

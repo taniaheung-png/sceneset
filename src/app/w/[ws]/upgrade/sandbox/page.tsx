@@ -25,7 +25,7 @@ export default async function Sandbox({ params, searchParams }: PageProps<"/w/[w
 
   const stop = (text: string) => (
     <>
-      <PageHeader event={workspace.name} title="Test checkout" />
+      <PageHeader event={workspace.name} title="Test checkout" intro="A simulation of paying. No card details are asked for and no money moves." />
       <p role="alert" className="rounded-md bg-danger-tint p-3 text-sm font-medium text-danger" data-blocked>{text}</p>
       <Link href={back} className="text-sm font-semibold text-primary underline">Back to plans</Link>
     </>
@@ -52,13 +52,13 @@ export default async function Sandbox({ params, searchParams }: PageProps<"/w/[w
 
   return (
     <>
-      <PageHeader event={workspace.name} title="Test checkout" />
+      <PageHeader event={workspace.name} title="Test checkout" intro="A simulation of paying. No card details are asked for and no money moves." />
       <p role="note" className="rounded-md bg-warn-tint p-4 text-base font-bold text-warn-ink" data-test-mode>
         Test mode — No real payment taken. No card details are collected.
       </p>
 
-      <section aria-labelledby="c-sum" className="max-w-xl rounded-lg border border-rule bg-surface p-5">
-        <h2 id="c-sum" className="text-lg font-bold">{p.name}</h2>
+      <section aria-labelledby="c-sum" className="max-w-xl panel p-5">
+        <h2 id="c-sum" className="panel-title">{p.name}</h2>
         <p className="num mt-1 text-2xl font-bold">{p.price} <span className="text-base font-normal text-ink-2">{p.cadence}</span></p>
         {plan === "event" && <p className="mt-1 text-sm">For the event: <strong>{eventTitle}</strong></p>}
         <p className="mt-2 text-xs text-ink-2">{PRICE_NOTE} This amount is shown for illustration; nothing is charged.</p>

@@ -33,8 +33,8 @@ export default async function DemoView({ params }: PageProps<"/demo/[view]">) {
         Read-only view of fictional sample data. In a real workspace this screen has forms to add and edit; here nothing can be changed or saved.
       </p>
       {view === "layout" && plan.venue ? (
-        <section aria-label="Venue layout" className="rounded-lg border border-rule bg-surface p-5">
-          <h2 className="text-lg font-bold">{plan.venue.name}</h2>
+        <section aria-label="Venue layout" className="panel p-5">
+          <h2 className="panel-title">{plan.venue.name}</h2>
           <div className="mt-3 max-w-3xl">
             <LayoutSvg room={{ w: plan.venue.width_cm, d: plan.venue.depth_cm }} items={plan.layout} label={`Sample layout, ${plan.layout.length} objects`} />
             <LayoutLegend />

@@ -58,6 +58,8 @@ const newPage = async (opts = {}) => {
 const open = async (page, path) => {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Workspace pages stream: the loading fallback shows first and the page replaces it moments later. Read nothing before it has.
+  await page.waitForFunction(() => ![...document.querySelectorAll("[role=status]")].some((e) => e.textContent.includes("Loading…")) && !document.querySelector('div[hidden][id^="S:"]'));
 };
 const signIn = async (page, role, next) => {
   await open(page, next ? `/login?next=${encodeURIComponent(next)}` : "/login");
@@ -531,12 +533,14 @@ try {
     await add.getByLabel("Kind").selectOption("entrance");
     await add.getByLabel("Label").fill("Gate");
     await add.getByRole("button", { name: "Add to the plan" }).click();
+    await owner.locator('[data-row="Gate"]').waitFor(); // the new object appears when the form action finishes; read its numbers only then
     const before = { table: await nums("Table 1"), stage: await nums("Stage"), gate: await nums("Gate") };
     await submit(owner, owner.getByRole("button", { name: "Save layout" }));
     await owner.getByText("Layout saved.").waitFor();
     await owner.reload();
     await owner.getByText("All changes are saved.").waitFor();
-    assert(JSON.stringify([await nums("Table 1"), await nums("Stage"), await nums("Gate")]) === JSON.stringify([before.table, before.stage, before.gate]), "coordinates changed after reload");
+    const after = { table: await nums("Table 1"), stage: await nums("Stage"), gate: await nums("Gate") };
+    assert(JSON.stringify(after) === JSON.stringify(before), `coordinates changed after reload: before ${JSON.stringify(before)} after ${JSON.stringify(after)}`);
     const db = (await admin.from("layout_items").select("label,x_cm,y_cm").eq("event_id", lab)).data;
     assert(db.find((r) => r.label === "Table 1").x_cm === Math.round(before.table[0] * 100) && db.length === 3, `database: ${JSON.stringify(db)}`);
     // saved objects are shown on the dashboard and the print summary too

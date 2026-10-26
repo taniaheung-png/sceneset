@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SamplePreview } from "@/components/site/SamplePreview";
+import { BriefcaseIcon, CheckCircleIcon, ClockIcon, LayoutIcon, PrinterIcon, UsersIcon, WalletIcon } from "@/components/ui/icons";
 import { ButtonLink } from "@/components/ui/Button";
 
 const steps = [
@@ -31,7 +32,8 @@ export default function Home() {
     <>
       <section className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-16">
         <div>
-          <h1 className="font-display text-[length:var(--text-hero)] font-bold leading-[1.04] tracking-tight">
+          <p className="eyebrow">Event planning for small teams</p>
+          <h1 className="text-[length:var(--text-hero)] font-bold leading-[1.04] tracking-[-0.045em] text-navy">
             One plan for the whole event.
           </h1>
           <p className="mt-4 max-w-xl text-lg text-ink-2">
@@ -49,7 +51,7 @@ export default function Home() {
 
       <section aria-labelledby="problem" className="border-y border-rule bg-surface">
         <div className="mx-auto grid max-w-6xl gap-6 px-4 py-12 sm:px-6 md:grid-cols-2">
-          <h2 id="problem" className="font-display text-3xl font-bold leading-tight">
+          <h2 id="problem" className="page-title leading-tight">
             The budget is in a spreadsheet. The quotes are in a chat. The running order is in last week&apos;s document.
           </h2>
           <p className="self-end text-lg text-ink-2">
@@ -64,7 +66,7 @@ export default function Home() {
         <ol className="mt-6 grid gap-x-10 gap-y-5 md:grid-cols-2">
           {steps.map(([title, text], i) => (
             <li key={title} className="flex gap-4 border-t border-rule pt-4">
-              <span className="num font-display text-2xl font-bold text-primary" aria-hidden>{i + 1}</span>
+              <span className="num text-2xl font-bold text-coral-dark" aria-hidden>{i + 1}</span>
               <div>
                 <h3 className="font-semibold">{title}</h3>
                 <p className="text-ink-2">{text}</p>
@@ -76,13 +78,19 @@ export default function Home() {
 
       <section aria-labelledby="parts-h" className="mx-auto max-w-6xl px-4 pb-14 sm:px-6">
         <h2 id="parts-h" className="text-2xl font-bold">What goes in the plan</h2>
-        <dl className="mt-6 grid gap-x-10 md:grid-cols-2">
-          {parts.map(([name, text]) => (
-            <div key={name} className="border-t border-rule py-3">
-              <dt className="font-semibold">{name}</dt>
-              <dd className="text-ink-2">{text}</dd>
-            </div>
-          ))}
+        <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {parts.map(([name, text], i) => {
+            const Icon = [CheckCircleIcon, BriefcaseIcon, WalletIcon, UsersIcon, ClockIcon, LayoutIcon, PrinterIcon][i] ?? CheckCircleIcon;
+            return (
+              <div key={name} className="panel flex gap-3 p-4">
+                <span className={`tile !size-9 ${["", "tile-coral", "tile-sage", "tile-gold"][i % 4]}`}><Icon width={18} height={18} /></span>
+                <div>
+                  <dt className="font-bold text-navy">{name}</dt>
+                  <dd className="text-sm text-ink-2">{text}</dd>
+                </div>
+              </div>
+            );
+          })}
         </dl>
       </section>
 
@@ -91,7 +99,7 @@ export default function Home() {
           <h2 id="price-h" className="text-2xl font-bold">Start free, upgrade when you need to</h2>
           <ul className="mt-5 grid gap-4 sm:grid-cols-3">
             {plans.map(([name, price, cadence]) => (
-              <li key={name} className="rounded-lg border border-rule p-4">
+              <li key={name} className="panel p-4">
                 <p className="font-semibold">{name}</p>
                 <p className="num mt-1 text-2xl font-bold">{price} <span className="text-sm font-medium text-ink-2">{cadence}</span></p>
               </li>
@@ -106,7 +114,7 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <h2 className="font-display text-3xl font-bold">See a sample plan before you sign up</h2>
+        <h2 className="page-title">See a sample plan before you sign up</h2>
         <p className="mt-2 max-w-xl text-ink-2">
           Open the read-only demo, or <Link href="/privacy" className="font-semibold text-primary underline">read how we handle data</Link>.
         </p>

@@ -37,8 +37,8 @@ function Totals({ t, money, label }: { t: BudgetTotals; money: (n: number) => st
     ["Variance", money(t.variance), `Committed minus planned. Above zero means above plan. ${explainVariance(t)}.`],
   ];
   return (
-    <section aria-label={label} className="rounded-lg border border-rule bg-surface p-5">
-      <h2 className="text-lg font-bold">{label}</h2>
+    <section aria-label={label} className="panel p-5">
+      <h2 className="panel-title">{label}</h2>
       <dl className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cells.map(([name, value, help, tone]) => (
           <div key={name}>
@@ -113,21 +113,21 @@ export default async function Budget({ params, searchParams }: PageProps<"/w/[ws
       </form>
 
       {items.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No budget lines yet</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No budget lines yet</h2>
           <p className="mt-2 text-ink-2">Add a line below, or accept a supplier quote to create one automatically.</p>
           <div className="mt-4"><ButtonLink href={`${base}/suppliers`} variant="secondary">Compare supplier quotes</ButtonLink></div>
         </section>
       ) : shown.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No lines in {category}</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No lines in {category}</h2>
           <div className="mt-4"><ButtonLink href={`${base}/budget`} variant="secondary">Clear filter</ButtonLink></div>
         </section>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-rule bg-surface">
+        <div className="overflow-x-auto panel">
           <table className="w-full min-w-[56rem] text-left text-sm">
             <caption className="sr-only">Budget lines in {event.currency}</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Category</th>
                 <th scope="col" className="px-3 py-2">Item</th>
@@ -187,8 +187,8 @@ export default async function Budget({ params, searchParams }: PageProps<"/w/[ws
       )}
 
       {canManage && (
-        <section aria-labelledby="add-h" className="max-w-3xl rounded-lg border border-rule bg-surface p-5">
-          <h2 id="add-h" className="text-lg font-bold">Add a budget line</h2>
+        <section aria-labelledby="add-h" className="max-w-3xl panel p-5">
+          <h2 id="add-h" className="panel-title">Add a budget line</h2>
           <div className="mt-3"><BudgetItemForm ws={ws} ev={ev} currency={event.currency} submit="Add line" /></div>
         </section>
       )}

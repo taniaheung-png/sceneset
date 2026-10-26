@@ -42,6 +42,8 @@ const newPage = async () => {
 const open = async (page, path) => {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Workspace pages stream: the loading fallback shows first and the page replaces it moments later. Read nothing before it has.
+  await page.waitForFunction(() => ![...document.querySelectorAll("[role=status]")].some((e) => e.textContent.includes("Loading…")) && !document.querySelector('div[hidden][id^="S:"]'));
 };
 const signIn = async (page, role, next) => {
   await open(page, next ? `/login?next=${encodeURIComponent(next)}` : "/login");
@@ -336,6 +338,7 @@ try {
     await submit(owner, line().getByRole("button", { name: "Save line" }));
     await owner.getByText("Budget line saved.").waitFor();
     await owner.reload();
+    await owner.waitForFunction(() => ![...document.querySelectorAll("[role=status]")].some((e) => e.textContent.includes("Loading…")) && !document.querySelector('div[hidden][id^="S:"]'));
     assert(/HKD 3,500 HKD 3,200\.50 HKD 200\.25 HKD 3,000\.25/.test(await text(line())), await text(line()));
     // stale: two tabs edit the same line
     const a = await owner.context().newPage();

@@ -134,6 +134,36 @@ body {
   box-shadow: 0 0 0 5px rgb(223 137 120 / 0.28);
 }
 
+/* Base elements (in the base layer so any utility class still wins). */
+@layer base {
+  /* Table header: the reference's pale, rounded strip with small tracked caps (12 px floor). */
+  thead th {
+    background: var(--sunken);
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  thead th:first-child {
+    border-top-left-radius: 0.4375rem;
+    border-bottom-left-radius: 0.4375rem;
+  }
+  thead th:last-child {
+    border-top-right-radius: 0.4375rem;
+    border-bottom-right-radius: 0.4375rem;
+  }
+  tbody tr {
+    border-color: #efece4;
+  }
+  details > summary {
+    border-radius: 0.4375rem;
+  }
+  ::selection {
+    background: rgb(223 137 120 / 0.3);
+  }
+}
+
 /*
  * Shared components. Plain CSS (not utilities) so every screen gets the same panel, heading, metric, pill and date tile.
  * Names are deliberately not Tailwind utility names: a plain rule that reuses one is silently dropped by the compiler.
@@ -153,7 +183,7 @@ body {
     padding: 1rem 1.125rem 0.75rem;
   }
   .panel-title {
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--navy);

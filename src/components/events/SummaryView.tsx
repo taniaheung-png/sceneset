@@ -56,7 +56,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
         <h2 id="s-tasks" className={H2}>Tasks and responsibilities</h2>
         {tasks.length === 0 ? <p className="mt-1 text-sm text-ink-2">No tasks recorded.</p> : (
           <div className="overflow-x-auto"><table className="mt-2 w-full text-left text-sm">
-            <thead className="bg-sunken"><tr><th scope="col" className={hd}>Task</th><th scope="col" className={hd}>Responsible</th><th scope="col" className={hd}>Due</th><th scope="col" className={hd}>Priority</th><th scope="col" className={hd}>Status</th></tr></thead>
+            <thead><tr><th scope="col" className={hd}>Task</th><th scope="col" className={hd}>Responsible</th><th scope="col" className={hd}>Due</th><th scope="col" className={hd}>Priority</th><th scope="col" className={hd}>Status</th></tr></thead>
             <tbody>
               {sortedTasks.map((t) => (
                 <tr key={t.id} className="border-t border-rule">
@@ -91,7 +91,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
         </table></div>
         {budget.length > 0 && (
           <div className="overflow-x-auto"><table className="mt-3 w-full text-left text-sm">
-            <thead className="bg-sunken"><tr><th scope="col" className={hd}>Category</th><th scope="col" className={hd}>Item</th><th scope="col" className={`${hd} text-right`}>Planned</th><th scope="col" className={`${hd} text-right`}>Committed</th><th scope="col" className={`${hd} text-right`}>Paid</th></tr></thead>
+            <thead><tr><th scope="col" className={hd}>Category</th><th scope="col" className={hd}>Item</th><th scope="col" className={`${hd} text-right`}>Planned</th><th scope="col" className={`${hd} text-right`}>Committed</th><th scope="col" className={`${hd} text-right`}>Paid</th></tr></thead>
             <tbody>
               {budget.map((b) => <tr key={b.id} className="border-t border-rule"><td className={th}>{b.category}</td><th scope="row" className={`${th} font-semibold`}>{b.name}{b.quote_id ? " (accepted quote)" : ""}</th><td className={`${num} whitespace-nowrap`}>{money(b.planned_minor)}</td><td className={`${num} whitespace-nowrap`}>{money(b.committed_minor)}</td><td className={`${num} whitespace-nowrap`}>{money(b.paid_minor)}</td></tr>)}
             </tbody>
@@ -103,7 +103,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
         <h2 id="s-suppliers" className={H2}>Suppliers and quotes</h2>
         {quotes.length === 0 ? <p className="mt-1 text-sm text-ink-2">No quotes recorded.</p> : (
           <div className="overflow-x-auto"><table className="mt-2 w-full text-left text-sm">
-            <thead className="bg-sunken"><tr><th scope="col" className={hd}>Supplier</th><th scope="col" className={hd}>Category</th><th scope="col" className={`${hd} text-right`}>Quote</th><th scope="col" className={hd}>Status</th><th scope="col" className={hd}>Scope</th></tr></thead>
+            <thead><tr><th scope="col" className={hd}>Supplier</th><th scope="col" className={hd}>Category</th><th scope="col" className={`${hd} text-right`}>Quote</th><th scope="col" className={hd}>Status</th><th scope="col" className={hd}>Scope</th></tr></thead>
             <tbody>
               {[...quotes].sort((a, b) => (a.suppliers?.category ?? "").localeCompare(b.suppliers?.category ?? "") || a.amount_minor - b.amount_minor).map((q) => (
                 <tr key={q.id} className="border-t border-rule"><th scope="row" className={`${th} font-semibold`}>{q.suppliers?.name}</th><td className={th}>{q.suppliers?.category}</td><td className={`${num} whitespace-nowrap`}>{money(q.amount_minor)}</td><td className={`${nw} capitalize`}>{q.status}</td><td className={th}>{q.scope || "Not stated"}</td></tr>
@@ -118,7 +118,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
         <p className="text-xs text-ink-2">A record is one entry; a record can be a party of several people. Attending headcount counts people on confirmed records only. Contact details are left out of this printout.</p>
         <div className="overflow-x-auto"><table className="mt-2 w-full text-left text-sm">
           <caption className="sr-only">Guest records and people by RSVP status</caption>
-          <thead className="bg-sunken"><tr><th scope="col" className={hd}>RSVP</th><th scope="col" className={`${hd} text-right`}>Records</th><th scope="col" className={`${hd} text-right`}>People</th></tr></thead>
+          <thead><tr><th scope="col" className={hd}>RSVP</th><th scope="col" className={`${hd} text-right`}>Records</th><th scope="col" className={`${hd} text-right`}>People</th></tr></thead>
           <tbody>
             {RSVPS.map(([k, l]) => <tr key={k} className="border-t border-rule"><th scope="row" className={`${th} font-normal`}>{l}</th><td className={`${num} whitespace-nowrap`}>{gs.records[k]}</td><td className={`${num} whitespace-nowrap`}>{gs.people[k]}</td></tr>)}
             <tr className="border-t-2 border-rule font-semibold"><th scope="row" className={th}>All guests</th><td className={`${num} whitespace-nowrap`}>{gs.totalRecords}</td><td className={`${num} whitespace-nowrap`}>{gs.people.invited + gs.people.confirmed + gs.people.tentative + gs.people.declined}</td></tr>
@@ -130,7 +130,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
         {guests.length > 0 && (
           <div className="overflow-x-auto"><table className="mt-3 w-full text-left text-sm">
             <caption className="sr-only">Guest list</caption>
-            <thead className="bg-sunken"><tr><th scope="col" className={hd}>Guest or party</th><th scope="col" className={hd}>Group</th><th scope="col" className={`${hd} text-right`}>People</th><th scope="col" className={hd}>RSVP</th></tr></thead>
+            <thead><tr><th scope="col" className={hd}>Guest or party</th><th scope="col" className={hd}>Group</th><th scope="col" className={`${hd} text-right`}>People</th><th scope="col" className={hd}>RSVP</th></tr></thead>
             <tbody>
               {guests.map((g) => <tr key={g.id} className="border-t border-rule"><th scope="row" className={`${th} font-semibold`}>{g.name}</th><td className={th}>{g.group_name || "None"}</td><td className={`${num} whitespace-nowrap`}>{g.party_size}</td><td className={nw}>{rsvpLabel(g.rsvp)}</td></tr>)}
             </tbody>
@@ -144,7 +144,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
         <p className="text-xs text-ink-2">Times are in {tz}.</p>
         {entries.length === 0 ? <p className="mt-1 text-sm text-ink-2">No running order recorded.</p> : (
           <div className="overflow-x-auto"><table className="mt-2 w-full text-left text-sm">
-            <thead className="bg-sunken"><tr><th scope="col" className={hd}>Time</th><th scope="col" className={hd}>Activity</th><th scope="col" className={hd}>Responsible</th><th scope="col" className={hd}>Location</th><th scope="col" className={hd}>Checks</th></tr></thead>
+            <thead><tr><th scope="col" className={hd}>Time</th><th scope="col" className={hd}>Activity</th><th scope="col" className={hd}>Responsible</th><th scope="col" className={hd}>Location</th><th scope="col" className={hd}>Checks</th></tr></thead>
             <tbody>
               {entries.map((x, i) => {
                 const sd = localDate(new Date(x.starts_at), tz);
@@ -180,7 +180,7 @@ export function SummaryView({ plan: p, base, only, branding = true }: { plan: Pl
             {layout.length > 0 && (
               <div className="overflow-x-auto"><table className="mt-3 w-full text-left text-sm">
                 <caption className="sr-only">Objects in the layout (metres)</caption>
-                <thead className="bg-sunken"><tr><th scope="col" className={hd}>Object</th><th scope="col" className={hd}>Kind</th><th scope="col" className={`${hd} text-right`}>X</th><th scope="col" className={`${hd} text-right`}>Y</th><th scope="col" className={`${hd} text-right`}>Width</th><th scope="col" className={`${hd} text-right`}>Depth</th></tr></thead>
+                <thead><tr><th scope="col" className={hd}>Object</th><th scope="col" className={hd}>Kind</th><th scope="col" className={`${hd} text-right`}>X</th><th scope="col" className={`${hd} text-right`}>Y</th><th scope="col" className={`${hd} text-right`}>Width</th><th scope="col" className={`${hd} text-right`}>Depth</th></tr></thead>
                 <tbody>
                   {layout.map((i) => <tr key={i.id} className="border-t border-rule"><th scope="row" className={`${th} font-semibold`}>{i.label || kindLabel(i.kind)}</th><td className={th}>{kindLabel(i.kind)}</td><td className={`${num} whitespace-nowrap`}>{cmToMetres(i.x_cm)}</td><td className={`${num} whitespace-nowrap`}>{cmToMetres(i.y_cm)}</td><td className={`${num} whitespace-nowrap`}>{cmToMetres(i.w_cm)}</td><td className={`${num} whitespace-nowrap`}>{cmToMetres(i.h_cm)}</td></tr>)}
                 </tbody>

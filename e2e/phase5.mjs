@@ -41,6 +41,8 @@ const newPage = async (opts = {}) => {
 const open = async (page, path) => {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Workspace pages stream: the loading fallback shows first and the page replaces it moments later. Read nothing before it has.
+  await page.waitForFunction(() => ![...document.querySelectorAll("[role=status]")].some((e) => e.textContent.includes("Loading…")) && !document.querySelector('div[hidden][id^="S:"]'));
 };
 const signIn = async (page, role, next) => {
   await open(page, next ? `/login?next=${encodeURIComponent(next)}` : "/login");

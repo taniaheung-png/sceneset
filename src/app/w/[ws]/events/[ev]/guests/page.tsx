@@ -26,7 +26,7 @@ const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
 };
 const TONE = { invited: "neutral", confirmed: "success", tentative: "warn", declined: "danger" } as const;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-const card = "rounded-lg border border-rule bg-surface p-5";
+const card = "panel p-5";
 
 export default async function Guests({ params, searchParams }: PageProps<"/w/[ws]/events/[ev]/guests">) {
   const { ws, ev } = await params;
@@ -80,14 +80,14 @@ export default async function Guests({ params, searchParams }: PageProps<"/w/[ws
       )}
 
       <section aria-label="Guest summary (all guests)" className={card}>
-        <h2 className="text-lg font-bold">Summary of all guests</h2>
+        <h2 className="panel-title">Summary of all guests</h2>
         <p className="mt-1 text-sm text-ink-2">
           A <strong>record</strong> is one entry in the list. A record can be a party of several <strong>people</strong>. Attending headcount counts people on confirmed records only.
         </p>
         <div className="mt-3 grid gap-6 lg:grid-cols-[1fr_1fr]">
           <table className="num w-full text-left text-sm">
             <caption className="sr-only">Guest records and people by RSVP status</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">RSVP</th>
                 <th scope="col" className="px-3 py-2 text-right">Records</th>
@@ -111,12 +111,12 @@ export default async function Guests({ params, searchParams }: PageProps<"/w/[ws
           </table>
           <dl className="num grid content-start gap-3 text-sm">
             <div><dt className="text-ink-2">Attending headcount (confirmed people)</dt><dd className="text-3xl font-bold">{s.attending}</dd></div>
-            <div><dt className="text-ink-2">Capacity</dt><dd className="text-lg font-bold">{s.capacity === null ? "Not set" : s.capacity}</dd></div>
+            <div><dt className="text-ink-2">Capacity</dt><dd className="panel-title">{s.capacity === null ? "Not set" : s.capacity}</dd></div>
             <div>
               <dt className="text-ink-2">{s.over ? "Over capacity by" : "Places left"}</dt>
               <dd className={`text-lg font-bold ${s.over ? "text-danger" : ""}`}>{s.remaining === null ? "Not set" : Math.abs(s.remaining)}</dd>
             </div>
-            <div><dt className="text-ink-2">Could attend if tentatives come (confirmed + tentative)</dt><dd className="text-lg font-bold">{s.possible}</dd></div>
+            <div><dt className="text-ink-2">Could attend if tentatives come (confirmed + tentative)</dt><dd className="panel-title">{s.possible}</dd></div>
           </dl>
         </div>
         {s.capacity === null && canManage && (
@@ -144,21 +144,21 @@ export default async function Guests({ params, searchParams }: PageProps<"/w/[ws
       )}
 
       {all.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No guests yet</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No guests yet</h2>
           <p className="mt-2 text-ink-2">{canManage ? "Add the first guest or party below. Invitations are not sent from SceneSet; this is your planning list." : "An organiser will add guests here."}</p>
         </section>
       ) : shown.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No guests match</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No guests match</h2>
           <p className="mt-2 text-ink-2">Nothing fits those filters. Clear them to see the whole list.</p>
           <div className="mt-4"><ButtonLink href={`${base}/guests`} variant="secondary">Clear filters</ButtonLink></div>
         </section>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-rule bg-surface">
+        <div className="overflow-x-auto panel">
           <table className="w-full min-w-[48rem] text-left text-sm">
             <caption className="sr-only">Guest list</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Guest</th>
                 <th scope="col" className="px-3 py-2">Group</th>
@@ -206,8 +206,8 @@ export default async function Guests({ params, searchParams }: PageProps<"/w/[ws
       )}
 
       {canManage && (
-        <section aria-labelledby="add-guest" className="max-w-3xl rounded-lg border border-rule bg-surface p-5">
-          <h2 id="add-guest" className="text-lg font-bold">Add a guest</h2>
+        <section aria-labelledby="add-guest" className="max-w-3xl panel p-5">
+          <h2 id="add-guest" className="panel-title">Add a guest</h2>
           <div className="mt-3"><GuestForm ws={ws} ev={ev} submit="Add guest" /></div>
         </section>
       )}

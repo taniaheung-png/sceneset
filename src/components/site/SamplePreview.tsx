@@ -10,12 +10,12 @@ export function SamplePreview() {
   const passed = readiness.filter((r) => r.done).length;
   return (
     <figure className="m-0">
-      <div className="overflow-hidden rounded-lg border border-control bg-surface shadow-2" role="img"
+      <div className="panel overflow-hidden shadow-2" role="img"
         aria-label={`Illustration of an event plan: ${event.title}, ${passed} of ${readiness.length} readiness checks passed, ${used} percent of budget committed. Fictional sample data.`}>
         <div className="flex items-center gap-4 border-b border-rule p-4" aria-hidden>
           <CueTab date={event.date} />
           <div className="min-w-0">
-            <p className="truncate text-lg font-bold">{event.title}</p>
+            <p className="truncate text-lg font-bold text-navy">{event.title}</p>
             <p className="truncate text-sm text-ink-2">{event.venue}</p>
           </div>
           <div className="ml-auto hidden sm:block"><StatusChip tone="info">{event.status}</StatusChip></div>
@@ -33,7 +33,7 @@ export function SamplePreview() {
             <div>
               <p className="text-ink-2">Budget committed</p>
               <p className="num font-semibold">{formatMinor(budget.committedMinor, event.currency)}</p>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-sunken"><div className="h-full bg-primary" style={{ width: `${used}%` }} /></div>
+              <div className="mt-1.5 h-[0.3125rem] overflow-hidden rounded-full bg-sunken"><div className="h-full rounded-full bg-coral" style={{ width: `${used}%` }} /></div>
             </div>
             <div>
               <p className="text-ink-2">Readiness</p>

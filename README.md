@@ -124,6 +124,8 @@ Use this to prove the setup instructions work from nothing, **without touching y
 | `npm run test:remote` | access and limit tests through the real API (creates and deletes throw-away users) | `RLS_TEST_CONFIRM=dev-project` |
 | `npm run test:e2e` (phase 2), `:p3`, `:p4`, `:p5`, `:p6`, `:p7` | browser suites for each phase | dev server, fresh accounts, `DEV_USERS_PASSWORD` |
 | `npm run test:e2e:p8` | the whole organiser journey on a Free workspace plus the final audits (responsive, accessibility basics, offline, print) | dev server with `PAYMENT_SANDBOX_ENABLED=true` |
+| `npm run test:e2e:design` | the redesigned frame: phone drawer, keyboard order and focus rings, reduced motion, printed summary, empty and permission-restricted states, planner at phone and desktop width | dev server, fresh accounts |
+| `node --env-file=.env.local e2e/design-shots.mjs after` | regenerates the review screenshots (`docs/design/after/`) from the real pages with fictional data | dev server, fresh accounts |
 | `npm run test:e2e:p7:off` | with the sandbox switched **off**: UI and replayed raw requests are refused, database calls are refused | a fresh server started with the flag `false`, after `test:e2e:p7` |
 | `npm run smoke -- <url>` | read-only checks of a running site: public pages, no dev routes, sign-in redirects, headers, disclosures, no secrets | a running site (local `next start` or your deployment) |
 

@@ -52,7 +52,7 @@ export default async function EventsList({ params, searchParams }: PageProps<"/w
 
   return (
     <>
-      <PageHeader event={workspace.name} title="Events">
+      <PageHeader event={workspace.name} title="Events" intro="Every event in this workspace, with its date, venue and status.">
         {canManage && hasSample && <ConfirmAction action={loadSampleEvent} fields={{ ws }} label="Reset sample event" title="Reset the sample event?" message="The fictional sample event is deleted and recreated as new, so any changes you made to it are lost. Your own events, suppliers and venues are not touched." confirmLabel="Reset sample event" tone="secondary" />}
         {canManage && <ButtonLink href={`/w/${ws}/events/new`}>New event</ButtonLink>}
       </PageHeader>
@@ -75,16 +75,16 @@ export default async function EventsList({ params, searchParams }: PageProps<"/w
       {error && <Banner tone="danger">We could not load events. Refresh to try again.</Banner>}
 
       {!error && events.length === 0 && (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
+        <section className="max-w-prose panel p-6">
           {filtering ? (
             <>
-              <h2 className="text-lg font-bold">No events match</h2>
+              <h2 className="panel-title">No events match</h2>
               <p className="mt-2 text-ink-2">Nothing fits those filters. Clear them to see every event.</p>
               <div className="mt-4"><ButtonLink href={`/w/${ws}/events`} variant="secondary">Clear filters</ButtonLink></div>
             </>
           ) : (
             <>
-              <h2 className="text-lg font-bold">No events yet</h2>
+              <h2 className="panel-title">No events yet</h2>
               <p className="mt-2 text-ink-2">
                 {canManage ? "Create your first event to start planning tasks, suppliers and the running order." : "An organiser or owner needs to create the first event. You will see it here."}
               </p>
@@ -104,10 +104,10 @@ export default async function EventsList({ params, searchParams }: PageProps<"/w
       )}
 
       {events.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-rule bg-surface">
+        <div className="overflow-x-auto panel">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <caption className="sr-only">{archived ? "Archived events" : "Events"}</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-4 py-2">Date</th>
                 <th scope="col" className="px-4 py-2">Event</th>

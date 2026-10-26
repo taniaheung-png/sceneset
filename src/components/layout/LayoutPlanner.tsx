@@ -187,7 +187,7 @@ export function LayoutPlanner({
         </div>
 
         <div className="flex flex-col gap-4">
-          <section aria-labelledby="sel-h" className="rounded-lg border border-rule bg-surface p-4">
+          <section aria-labelledby="sel-h" className="panel p-4">
             <h3 id="sel-h" className="font-bold">{sel ? `Selected: ${sel.label || kindLabel(sel.kind)}` : "No object selected"}</h3>
             {sel ? (
               <form
@@ -223,7 +223,7 @@ export function LayoutPlanner({
 
           <form
             action={(fd) => addObject(fd)}
-            className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-4"
+            className="flex flex-col gap-3 panel p-4"
             aria-label="Add an object"
           >
             <h3 className="font-bold">Add an object</h3>
@@ -236,7 +236,7 @@ export function LayoutPlanner({
         </div>
       </div>
 
-      <form action={action} className="flex flex-wrap items-center gap-3 rounded-lg border border-rule bg-surface p-4" aria-label="Save the layout">
+      <form action={action} className="flex flex-wrap items-center gap-3 panel p-4" aria-label="Save the layout">
         <input type="hidden" name="ws" value={ws} />
         <input type="hidden" name="ev" value={ev} />
         <input type="hidden" name="payload" value={payload} />
@@ -248,14 +248,14 @@ export function LayoutPlanner({
         {state.error && <p role="alert" className="w-full rounded-md bg-danger-tint p-3 text-sm font-medium text-danger">{state.error}</p>}
       </form>
 
-      <section aria-labelledby="objs-h" className="overflow-x-auto rounded-lg border border-rule bg-surface">
+      <section aria-labelledby="objs-h" className="overflow-x-auto panel">
         <h3 id="objs-h" className="px-4 pt-4 font-bold">Objects ({items.length})</h3>
         {items.length === 0 ? (
           <p className="px-4 pb-4 pt-2 text-sm text-ink-2">Nothing is placed yet. Add a table, stage, entrance or booth.</p>
         ) : (
           <table className="mt-2 w-full min-w-[40rem] text-left text-sm">
             <caption className="sr-only">Objects in the layout, with positions and sizes in metres</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Object</th>
                 <th scope="col" className="px-3 py-2">Kind</th>

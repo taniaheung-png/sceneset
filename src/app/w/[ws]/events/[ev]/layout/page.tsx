@@ -28,7 +28,7 @@ const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
 };
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const size = (v: { width_cm: number; depth_cm: number }) => `${cmToMetres(v.width_cm)} m by ${cmToMetres(v.depth_cm)} m`;
-const card = "rounded-lg border border-rule bg-surface p-5";
+const card = "panel p-5";
 
 export default async function Layout({ params, searchParams }: PageProps<"/w/[ws]/events/[ev]/layout">) {
   const { ws, ev } = await params;
@@ -58,7 +58,7 @@ export default async function Layout({ params, searchParams }: PageProps<"/w/[ws
       {!canManage && <p className="rounded-md bg-sunken p-3 text-sm text-ink-2 no-print">You can read the layout. Organisers and owners edit it.</p>}
 
       <section aria-labelledby="ev-venue" className={`${card} no-print`}>
-        <h2 id="ev-venue" className="text-lg font-bold">Venue for this event</h2>
+        <h2 id="ev-venue" className="panel-title">Venue for this event</h2>
         {venue ? (
           <p className="mt-1 text-sm"><strong>{venue.name}</strong>, <span className="num">{size(venue)}</span>{venue.address_note && <span className="text-ink-2"> ({venue.address_note})</span>}</p>
         ) : (
@@ -82,7 +82,7 @@ export default async function Layout({ params, searchParams }: PageProps<"/w/[ws
 
       {room && venue && (
         <section aria-labelledby="plan-h" className={card}>
-          <h2 id="plan-h" className="text-lg font-bold">Layout: {venue.name}</h2>
+          <h2 id="plan-h" className="panel-title">Layout: {venue.name}</h2>
           {canManage ? (
             <div className="mt-3">
               <LayoutPlanner key={items.map((i) => i.id + i.updated_at).join()} ws={ws} ev={ev} room={room} venueName={venue.name} initial={planner} />
@@ -95,7 +95,7 @@ export default async function Layout({ params, searchParams }: PageProps<"/w/[ws
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[32rem] text-left text-sm">
                     <caption className="sr-only">Objects in the layout (metres)</caption>
-                    <thead className="bg-sunken"><tr><th scope="col" className="px-3 py-2">Object</th><th scope="col" className="px-3 py-2">Kind</th><th scope="col" className="num px-3 py-2 text-right">X</th><th scope="col" className="num px-3 py-2 text-right">Y</th><th scope="col" className="num px-3 py-2 text-right">Width</th><th scope="col" className="num px-3 py-2 text-right">Depth</th></tr></thead>
+                    <thead><tr><th scope="col" className="px-3 py-2">Object</th><th scope="col" className="px-3 py-2">Kind</th><th scope="col" className="num px-3 py-2 text-right">X</th><th scope="col" className="num px-3 py-2 text-right">Y</th><th scope="col" className="num px-3 py-2 text-right">Width</th><th scope="col" className="num px-3 py-2 text-right">Depth</th></tr></thead>
                     <tbody>
                       {items.map((i) => (
                         <tr key={i.id} className="border-t border-rule"><th scope="row" className="px-3 py-2 font-semibold">{i.label || kindLabel(i.kind)}</th><td className="px-3 py-2">{kindLabel(i.kind)}</td><td className="num px-3 py-2 text-right">{cmToMetres(i.x_cm)}</td><td className="num px-3 py-2 text-right">{cmToMetres(i.y_cm)}</td><td className="num px-3 py-2 text-right">{cmToMetres(i.w_cm)}</td><td className="num px-3 py-2 text-right">{cmToMetres(i.h_cm)}</td></tr>
@@ -111,7 +111,7 @@ export default async function Layout({ params, searchParams }: PageProps<"/w/[ws
       )}
 
       <section aria-labelledby="venues-h" className={`${card} no-print`}>
-        <h2 id="venues-h" className="text-lg font-bold">Venues in this workspace</h2>
+        <h2 id="venues-h" className="panel-title">Venues in this workspace</h2>
         <p className="text-sm text-ink-2">Shared by every event. A venue cannot be made smaller than the layout objects placed on it, and deleting one never deletes an event.</p>
         {venues.length === 0 ? (
           <p className="mt-3 text-ink-2">No venues yet. {canManage ? "Add one below." : ""}</p>
@@ -119,7 +119,7 @@ export default async function Layout({ params, searchParams }: PageProps<"/w/[ws
           <div className="mt-3 overflow-x-auto rounded-md border border-rule">
             <table className="w-full min-w-[40rem] text-left text-sm">
               <caption className="sr-only">Venues</caption>
-              <thead className="bg-sunken"><tr><th scope="col" className="px-3 py-2">Venue</th><th scope="col" className="px-3 py-2">Size</th><th scope="col" className="px-3 py-2">Used by</th><th scope="col" className="px-3 py-2">Actions</th></tr></thead>
+              <thead><tr><th scope="col" className="px-3 py-2">Venue</th><th scope="col" className="px-3 py-2">Size</th><th scope="col" className="px-3 py-2">Used by</th><th scope="col" className="px-3 py-2">Actions</th></tr></thead>
               <tbody>
                 {venues.map((v) => (
                   <tr key={v.id} className="border-t border-rule align-top" data-venue={v.name}>

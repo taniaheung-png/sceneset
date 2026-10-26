@@ -53,11 +53,11 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
 
   return (
     <>
-      <PageHeader event={workspace.name} title="Settings" />
+      <PageHeader event={workspace.name} title="Settings" intro="The workspace, who is in it, and your own account." />
       {msg && <Banner tone={msg[0]}>{msg[1]}</Banner>}
 
-      <section aria-labelledby="s-ws" className="max-w-xl rounded-lg border border-rule bg-surface p-5">
-        <h2 id="s-ws" className="text-lg font-bold">Workspace</h2>
+      <section aria-labelledby="s-ws" className="max-w-xl panel p-5">
+        <h2 id="s-ws" className="panel-title">Workspace</h2>
         <p className="mt-1 text-sm text-ink-2">
           Plan: <strong>{workspace.plan === "organiser" ? "Organiser (test)" : "Free Personal"}</strong>
           {" "}(<Link href={`/w/${ws}/upgrade`} className="font-semibold text-primary underline">see plans and test upgrades</Link>). Your role: <strong>{role}</strong>.
@@ -73,12 +73,12 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
         )}
       </section>
 
-      <section aria-labelledby="s-mem" className="rounded-lg border border-rule bg-surface p-5">
-        <h2 id="s-mem" className="text-lg font-bold">Members</h2>
+      <section aria-labelledby="s-mem" className="panel p-5">
+        <h2 id="s-mem" className="panel-title">Members</h2>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[34rem] text-left text-sm">
             <caption className="sr-only">Workspace members and their roles</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Name</th>
                 {isOwner && <th scope="col" className="px-3 py-2">Email</th>}
@@ -147,16 +147,16 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
         )}
       </section>
 
-      <section aria-labelledby="s-roles" className="max-w-3xl rounded-lg border border-rule bg-surface p-5">
-        <h2 id="s-roles" className="text-lg font-bold">What each role can do</h2>
+      <section aria-labelledby="s-roles" className="max-w-3xl panel p-5">
+        <h2 id="s-roles" className="panel-title">What each role can do</h2>
         <dl className="mt-3 grid gap-3 text-sm">
           {ROLE_NOTES.map(([r, t]) => (
             <div key={r}><dt className="font-semibold">{r}</dt><dd className="text-ink-2">{t}</dd></div>
           ))}
         </dl>
       </section>
-      <section aria-labelledby="s-profile" className="max-w-xl rounded-lg border border-rule bg-surface p-5">
-        <h2 id="s-profile" className="text-lg font-bold">Your profile</h2>
+      <section aria-labelledby="s-profile" className="max-w-xl panel p-5">
+        <h2 id="s-profile" className="panel-title">Your profile</h2>
         <p className="mt-1 text-sm text-ink-2">Signed in as <strong>{user.email}</strong>. Teammates see your name; only workspace owners see member email addresses.</p>
         <form action={updateProfile} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <input type="hidden" name="ws" value={ws} />
@@ -166,8 +166,8 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
         <div className="mt-4"><CollectionNotice>Your name is shown to everyone in your workspaces.</CollectionNotice></div>
       </section>
 
-      <section aria-labelledby="s-privacy" className="max-w-3xl rounded-lg border border-rule bg-surface p-5">
-        <h2 id="s-privacy" className="text-lg font-bold">Privacy and your data</h2>
+      <section aria-labelledby="s-privacy" className="max-w-3xl panel p-5">
+        <h2 id="s-privacy" className="panel-title">Privacy and your data</h2>
         <p className="mt-1 text-sm text-ink-2">
           Read what SceneSet stores and why in the <Link href="/privacy" className="font-semibold text-primary underline">privacy notice</Link>. You can correct your name above,
           and delete your account and data below.
@@ -176,7 +176,7 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
 
       {isOwner && (
         <section aria-labelledby="s-delws" className="max-w-3xl rounded-lg border border-danger bg-surface p-5">
-          <h2 id="s-delws" className="text-lg font-bold">Delete this workspace</h2>
+          <h2 id="s-delws" className="panel-title">Delete this workspace</h2>
           <p className="mt-1 text-sm text-ink-2">Permanently deletes the workspace and everything in it for every member: events, tasks, budgets, suppliers, guests, schedules, layouts and notes. This cannot be undone.</p>
           <form action={deleteWorkspace} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end" aria-label="Delete this workspace">
             <input type="hidden" name="ws" value={ws} />
@@ -187,7 +187,7 @@ export default async function Settings({ params, searchParams }: PageProps<"/w/[
       )}
 
       <section aria-labelledby="s-delacct" className="max-w-3xl rounded-lg border border-danger bg-surface p-5">
-        <h2 id="s-delacct" className="text-lg font-bold">Delete your account</h2>
+        <h2 id="s-delacct" className="panel-title">Delete your account</h2>
         <p className="mt-1 text-sm text-ink-2">
           This permanently deletes your sign-in, your profile and your membership of every workspace. Workspaces where you are the only member are deleted with
           you. In workspaces shared with others, the plan stays; notes you wrote remain with the author shown as &ldquo;Former member&rdquo;, and tasks you created

@@ -59,7 +59,9 @@ const replay = async (page, cap, vals) => {
   for (const [name, value] of Object.entries(vals)) body = setField(body, name, value);
   const headers = Object.fromEntries(Object.entries(cap.headers).filter(([k]) => !["content-length", "host", "cookie", "connection"].includes(k)));
   const oldWs = /\/w\/([0-9a-f-]{36})\//.exec(cap.url)[1];
-  return page.request.post(cap.url.replace(oldWs, vals.ws ?? oldWs), { headers, data: body, maxRedirects: 0 });
+  // always aim at the server under test (BASE), never at the origin the request was captured from
+  const u = new URL(cap.url);
+  return page.request.post(new URL(u.pathname + u.search, BASE).toString().replace(oldWs, vals.ws ?? oldWs), { headers, data: body, maxRedirects: 0 });
 };
 const key = () => `off-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 const asUser = async (role) => {

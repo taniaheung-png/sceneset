@@ -37,7 +37,7 @@ const MESSAGES: Record<string, [tone: "info" | "danger", text: string]> = {
 };
 const STATUS_TONE = { requested: "neutral", shortlisted: "info", accepted: "success", rejected: "danger" } as const;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-const card = "rounded-lg border border-rule bg-surface p-5";
+const card = "panel p-5";
 
 export default async function Suppliers({ params, searchParams }: PageProps<"/w/[ws]/events/[ev]/suppliers">) {
   const { ws, ev } = await params;
@@ -104,7 +104,7 @@ export default async function Suppliers({ params, searchParams }: PageProps<"/w/
       </form>
 
       <section aria-labelledby="q-h" className={card}>
-        <h2 id="q-h" className="text-lg font-bold">Quote comparison for this event</h2>
+        <h2 id="q-h" className="panel-title">Quote comparison for this event</h2>
         <p className="text-sm text-ink-2">
           Amounts are in {event.currency}. Accepting a quote creates (or fills) one budget line, so spending is counted once.
         </p>
@@ -127,7 +127,7 @@ export default async function Suppliers({ params, searchParams }: PageProps<"/w/
                   <div className="mt-2 overflow-x-auto rounded-md border border-rule">
                     <table className="w-full min-w-[44rem] text-left text-sm">
                       <caption className="sr-only">Quotes for {cat}</caption>
-                      <thead className="bg-sunken">
+                      <thead>
                         <tr>
                           <th scope="col" className="px-3 py-2">Supplier</th>
                           <th scope="col" className="px-3 py-2 text-right">Quote</th>
@@ -219,7 +219,7 @@ export default async function Suppliers({ params, searchParams }: PageProps<"/w/
       </section>
 
       <section aria-labelledby="s-h" className={card}>
-        <h2 id="s-h" className="text-lg font-bold">Supplier directory</h2>
+        <h2 id="s-h" className="panel-title">Supplier directory</h2>
         <p className="text-sm text-ink-2">Shared by every event in this workspace. Use fictional suppliers while this is a prototype.</p>
         {suppliers.length === 0 ? (
           <p className="mt-4 text-ink-2">No suppliers yet. {canManage ? "Add the first one below." : "An organiser will add suppliers here."}</p>
@@ -232,7 +232,7 @@ export default async function Suppliers({ params, searchParams }: PageProps<"/w/
           <div className="mt-4 overflow-x-auto rounded-md border border-rule">
             <table className="w-full min-w-[40rem] text-left text-sm">
               <caption className="sr-only">Suppliers</caption>
-              <thead className="bg-sunken">
+              <thead>
                 <tr>
                   <th scope="col" className="px-3 py-2">Supplier</th>
                   <th scope="col" className="px-3 py-2">Category</th>

@@ -62,7 +62,7 @@ export default async function Schedule({ params, searchParams }: PageProps<"/w/[
       </p>
 
       {entries.length > 0 && (
-        <section aria-label="Running order checks" className="rounded-lg border border-rule bg-surface p-4 text-sm">
+        <section aria-label="Running order checks" className="panel p-4 text-sm">
           <h2 className="font-bold">Checks</h2>
           {all.length === 0 ? (
             <p className="mt-1 text-ink-2">No overlaps and every entry sits inside the event window.</p>
@@ -77,15 +77,15 @@ export default async function Schedule({ params, searchParams }: PageProps<"/w/[
       )}
 
       {entries.length === 0 ? (
-        <section className="max-w-prose rounded-lg border border-rule bg-surface p-6">
-          <h2 className="text-lg font-bold">No running order yet</h2>
+        <section className="max-w-prose panel p-6">
+          <h2 className="panel-title">No running order yet</h2>
           <p className="mt-2 text-ink-2">{canManage ? "Add the first activity below, for example “Stallholder load-in”." : "An organiser will add the running order here."}</p>
         </section>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-rule bg-surface">
+        <div className="overflow-x-auto panel">
           <table className="w-full min-w-[52rem] text-left text-sm">
             <caption className="sr-only">Running order in {tz}</caption>
-            <thead className="bg-sunken">
+            <thead>
               <tr>
                 <th scope="col" className="px-3 py-2">Time</th>
                 <th scope="col" className="px-3 py-2">Activity</th>
@@ -151,8 +151,8 @@ export default async function Schedule({ params, searchParams }: PageProps<"/w/[
       )}
 
       {canManage && (
-        <section aria-labelledby="add-entry" className="max-w-3xl rounded-lg border border-rule bg-surface p-5">
-          <h2 id="add-entry" className="text-lg font-bold">Add an entry</h2>
+        <section aria-labelledby="add-entry" className="max-w-3xl panel p-5">
+          <h2 id="add-entry" className="panel-title">Add an entry</h2>
           <div className="mt-3"><EntryForm {...props} initial={{ start: defaultStart, end: defaultEnd }} submit="Add entry" /></div>
         </section>
       )}
