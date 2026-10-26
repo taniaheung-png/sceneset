@@ -1,39 +1,54 @@
 @import "tailwindcss";
 
 /*
- * SceneSet design tokens — "event production desk".
+ * SceneSet design tokens: "warm paper, navy ink, coral accent", taken from the supplied reference site
+ * (docs/design/REFERENCE.md lists what was observed and what was adapted).
  * One light theme only (dark-mode switching is out of MVP scope).
  * Every text/background pair used in the UI is checked by `npm run contrast`.
  */
 :root {
   color-scheme: light;
 
-  /* Colour */
-  --paper: #f3f2ee; /* workspace background (warm neutral) */
-  --surface: #ffffff; /* cards, tables, inputs */
-  --sunken: #e8e6df; /* table headers, wells */
-  --ink: #16201c; /* primary text */
-  --ink-2: #46524c; /* secondary text */
-  --rule: #d4d1c6; /* decorative dividers */
-  --control: #7d7b6f; /* input/button borders (>=3:1 on paper & surface) */
-  --primary: #0b5d4b; /* deep green: main actions */
-  --primary-hover: #084538;
+  /* Surfaces (observed: cream page, paper cards, hairline borders) */
+  --paper: #f7f4ed; /* page background */
+  --surface: #fffefa; /* cards, sidebar, tables, inputs */
+  --sunken: #f1efe8; /* table headers, wells, count badges */
+  --rule: #e9e5db; /* card and divider hairlines (decorative) */
+
+  /* Text (observed: navy ink; the reference's grey captions are lighter than AA, so secondary text is darker here) */
+  --ink: #1c2d3d;
+  --ink-2: #5a6770; /* secondary text, >= 4.5:1 on paper and cards */
+  --control: #858a85; /* input and button borders, >= 3:1 on paper and cards */
+
+  /* Brand */
+  --navy: #173553;
+  --primary: #173553; /* main actions, links, active nav text */
+  --primary-hover: #254867;
   --on-primary: #ffffff;
-  --primary-tint: #dcebe5; /* selected nav, soft fills */
-  --cue: #ffc23d; /* stage-light accent: fills only, always with ink text */
-  --danger: #b42318;
-  --danger-tint: #fbe4e1;
-  --info: #1d4ed8;
-  --info-tint: #dfe8fc;
-  --success: #0b6b3a;
-  --success-tint: #d9efe2;
-  --warn-ink: #7a4a00;
-  --warn-tint: #fdebc2;
+  --primary-tint: #eaf0f3; /* selected nav row */
+  --coral: #df8978; /* progress fills, dots (never text) */
+  --coral-dark: #a54e40; /* eyebrows, urgent dates, counts */
+  --coral-soft: #f7e7e1;
+  --sage: #5e826e;
+  --sage-soft: #e6eee7;
+  --blue-soft: #e9eff3;
+  --gold-soft: #f4eddb;
+  --cue: #f4eddb; /* notice bars (ink text) */
+
+  /* Status */
+  --danger: #a54e40;
+  --danger-tint: #f7e7e1;
+  --info: #3b627c;
+  --info-tint: #e9eff3;
+  --success: #476f58;
+  --success-tint: #e6eee7;
+  --warn-ink: #7a5a14;
+  --warn-tint: #f4eddb;
 
   /* Type */
-  --text-xs: 0.8125rem; /* 13px: metadata only */
-  --text-sm: 0.875rem; /* 14px: dense tables/boards */
-  --text-base: 1rem; /* 16px: body */
+  --text-xs: 0.75rem; /* 12px: meta, captions, pills (floor) */
+  --text-sm: 0.875rem; /* 14px: UI text */
+  --text-base: 1rem; /* 16px */
   --text-lg: 1.125rem;
   --text-xl: 1.375rem;
   --text-2xl: 1.75rem;
@@ -44,8 +59,9 @@
   --dur: 180ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Layout */
-  --sidebar-w: 15rem;
+  /* Layout (observed: 248 px sidebar, 66 px top bar, content up to 1210 px) */
+  --sidebar-w: 15.5rem;
+  --topbar-h: 4.125rem;
   --touch: 2.75rem; /* 44px */
 }
 
@@ -57,10 +73,18 @@
   --color-ink-2: var(--ink-2);
   --color-rule: var(--rule);
   --color-control: var(--control);
+  --color-navy: var(--navy);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-on-primary: var(--on-primary);
   --color-primary-tint: var(--primary-tint);
+  --color-coral: var(--coral);
+  --color-coral-dark: var(--coral-dark);
+  --color-coral-soft: var(--coral-soft);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-blue-soft: var(--blue-soft);
+  --color-gold-soft: var(--gold-soft);
   --color-cue: var(--cue);
   --color-danger: var(--danger);
   --color-danger-tint: var(--danger-tint);
@@ -71,16 +95,16 @@
   --color-warn-ink: var(--warn-ink);
   --color-warn-tint: var(--warn-tint);
   --font-sans: var(--font-ui), system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-display: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  --font-display: var(--font-ui), system-ui, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Shape & depth: static so the variables exist for plain CSS (print, focus ring). */
+/* Shape and depth (observed: 11 px cards, 9 px rows and nav items, 8 px buttons, 7 px fields, very soft shadows). */
 @theme static {
-  --radius-sm: 4px;
+  --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 14px;
-  --shadow-1: 0 1px 2px rgb(22 32 28 / 0.08);
-  --shadow-2: 0 6px 20px rgb(22 32 28 / 0.12);
+  --radius-lg: 11px;
+  --shadow-1: 0 4px 14px rgb(34 50 63 / 0.03);
+  --shadow-2: 0 12px 34px rgb(34 50 63 / 0.1);
 }
 
 html {
@@ -94,6 +118,7 @@ body {
   font-size: var(--text-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Money and counts line up in columns. */
@@ -101,11 +126,202 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Visible focus on every interactive control (WCAG 2.2). */
+/* Visible focus on every interactive control (WCAG 2.2): navy ring with a soft coral halo, as the reference's coral ring but at AA contrast. */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 5px rgb(223 137 120 / 0.28);
+}
+
+/*
+ * Shared components. Plain CSS (not utilities) so every screen gets the same panel, heading, metric, pill and date tile.
+ * Names are deliberately not Tailwind utility names: a plain rule that reuses one is silently dropped by the compiler.
+ */
+@layer components {
+  .panel {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.625rem;
+    padding: 1rem 1.125rem 0.75rem;
+  }
+  .panel-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--navy);
+  }
+  .panel-cap {
+    margin-top: 0.25rem;
+    font-size: var(--text-xs);
+    color: var(--ink-2);
+  }
+  .panel-body {
+    padding: 0 1.125rem 1.125rem;
+  }
+  .eyebrow {
+    margin-bottom: 0.4375rem;
+    font-size: 0.71875rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--coral-dark);
+  }
+  .page-title {
+    font-size: clamp(1.625rem, 2.5vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--navy);
+    text-wrap: balance;
+  }
+  .page-intro {
+    max-width: 38rem;
+    margin-top: 0.4375rem;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .metric {
+    position: relative;
+    overflow: hidden;
+    min-height: 7.75rem;
+    padding: 1rem 1rem 0.8125rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+  /* the faint quarter-circle in the corner is the reference's signature detail */
+  .metric::after {
+    content: "";
+    position: absolute;
+    right: -1.8rem;
+    bottom: -2.6rem;
+    width: 4.6rem;
+    height: 4.6rem;
+    border: 1px solid rgb(23 53 83 / 0.07);
+    border-radius: 50%;
+  }
+  .metric-label {
+    font-size: 0.8125rem;
+    font-weight: 550;
+    color: var(--ink-2);
+  }
+  .metric-value {
+    margin: 0.75rem 0 0.25rem;
+    font-size: clamp(1.5rem, 2vw, 1.75rem);
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    color: var(--navy);
+  }
+  .metric-foot {
+    font-size: var(--text-xs);
+    color: var(--ink-2);
+  }
+  .tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    background: var(--blue-soft);
+    color: var(--navy);
+  }
+  .tile-coral {
+    background: var(--coral-soft);
+    color: var(--coral-dark);
+  }
+  .tile-sage {
+    background: var(--sage-soft);
+    color: var(--success);
+  }
+  .tile-gold {
+    background: var(--gold-soft);
+    color: var(--warn-ink);
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.5rem;
+    padding: 0 0.625rem;
+    border-radius: 999px;
+    font-size: var(--text-xs);
+    font-weight: 650;
+    white-space: nowrap;
+    background: var(--sunken);
+    color: var(--ink-2);
+  }
+  .pill-info {
+    background: var(--info-tint);
+    color: var(--info);
+  }
+  .pill-success {
+    background: var(--success-tint);
+    color: var(--success);
+  }
+  .pill-warn {
+    background: var(--warn-tint);
+    color: var(--warn-ink);
+  }
+  .pill-danger {
+    background: var(--danger-tint);
+    color: var(--danger);
+  }
+  .date-tile {
+    display: grid;
+    flex: none;
+    align-content: center;
+    justify-items: center;
+    width: 2.8125rem;
+    height: 3.125rem;
+    border-radius: 0.4375rem;
+    background: var(--blue-soft);
+    color: var(--navy);
+  }
+  .date-tile .d {
+    font-size: 1.0625rem;
+    font-weight: 720;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .date-tile .m {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .date-tile-coral {
+    background: var(--coral-soft);
+    color: var(--coral-dark);
+  }
+  .row-card {
+    border: 1px solid var(--rule);
+    border-radius: 0.5625rem;
+    background: var(--surface);
+    transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  a.row-card:hover {
+    border-color: #ded9cc;
+    transform: translateY(-1px);
+  }
+  .navy-card {
+    border-radius: 0.5625rem;
+    background: var(--navy);
+    color: var(--surface);
+  }
 }
 
 /*

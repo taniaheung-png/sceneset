@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-// UI face: chosen from the UI UX Pro Max SaaS/dashboard search. Display face: landing hero only.
-const ui = Plus_Jakarta_Sans({ variable: "--font-ui", subsets: ["latin"], display: "swap" });
-const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"], display: "swap" });
+// One family, as in the reference site: Inter, used for headings, body and figures.
+const ui = Inter({ variable: "--font-ui", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "SceneSet — one plan for your whole event", template: "%s · SceneSet" },
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${ui.variable} ${display.variable}`}>
+    <html lang="en" className={ui.variable}>
       <body className="min-h-screen bg-paper text-ink">
         <a
           href="#main"

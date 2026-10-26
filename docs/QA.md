@@ -343,6 +343,32 @@ Pages refresh on navigation (no realtime); limits apply to new events and member
 ### Cleanup
 The development project holds 0 users, workspaces, events and checkout log rows after the runs; no existing data was touched. All test processes were stopped before this record was finished.
 
+## Design redesign (reference-led): checkpoint A of three
+Scope of this checkpoint: reference analysis, shared tokens and primitives, the application frame (sidebar, top bar, breadcrumbs, mobile drawer, event navigation) and one fully working event dashboard. Everything else adopts the new tokens automatically (colours, Inter, radii, buttons, fields, pills, date tile) but its own layout is **not yet redesigned**: that is checkpoint B. Checkpoint C (audit, polish, full regression) has **not** been run.
+
+**Skills used.** Impeccable 4.7.1 (read `SKILL.md`, ran `context`, read `init`, `new-work`, `craft-floor`, `operate`; ran the mechanical `detect` over the changed files: 0 findings), UI UX Pro Max (project-local `SKILL.md` read; its keyboard/target-size and contrast rules applied; the search script was not run because the reference, not a search, sets the direction), frontend-design, and Ponytail (shared CSS and existing components changed instead of new components; one new shell component, one new icon set, no new dependency). `PRODUCT.md` was written from `PRD.md` without an interview, as instructed.
+
+**One conflict, decided for the reference.** Impeccable's craft floor bans an eyebrow label above a heading and discourages a metric-card row. The reference uses both as its signature, and the founder's brief says the reference governs, so both are kept.
+
+**Reference.** Inspected live in the built-in browser: Overview, Events, Tasks, Budget, Suppliers, Guests, Schedule at 1440 px and the phone layout of Overview. The full computed styles and stylesheet were read (sidebar 248 px, top bar 66 px, Inter, cream/paper/navy/coral palette, 11 px cards, 8 px buttons, pills, date tiles, metric cards, navy summary card, breakpoints at 1120, 820, 640 and 380 px). Observed values, deliberate adaptations and assumptions are in `docs/design/REFERENCE.md`. Screenshots: `docs/design/reference/`, before: `docs/design/before/` (16 views at 1440 and 375 px), after: `docs/design/after/`, side by side: `docs/design/compare-dashboard-1440.png` and `compare-dashboard-375.png`.
+
+**Changed.** `src/app/globals.css` (tokens, shared component classes), `src/app/layout.tsx` (Inter), `AppShell` (new), `PageHeader`, `Brand`, `Button`, `StatusChip`, `CueTab` (now the date tile), `Field`, `EventNav`, `DashboardView`, `ReadinessPanel`, the workspace and event layouts, the demo layout and demo headers, `scripts/contrast.mjs` (30 pairs), `e2e/design-shots.mjs` (screenshots with believable fictional data through the real pages), `PRD.md` section 3.4, `PRODUCT.md`. Removed: `SideNav` (replaced by `AppShell`) and the tab bar (event views moved into the sidebar; Edit event and Print summary are header buttons). Routes, actions, data, permissions and calculations are untouched.
+
+**Verification run for this checkpoint (fresh accounts, sequential):**
+| Check | Result |
+|---|---|
+| `npm run lint`, `typecheck`, production `build` | pass |
+| `npm run contrast` | all 30 pairs pass |
+| `npm test` | 141/141 |
+| `test:e2e` (Phase 2: sign-in, members, roles, sign-out) | 17/17 |
+| `test:e2e:p3` (events, dashboard counts, task board, notes, isolation) | 25/25 with the original assertions |
+| `test:e2e:p6` | 27/28 on the first run; the one failure was a real regression (the redesigned demo layout no longer showed the sample event's title). Fixed (title is now the page heading and the sidebar group label); the demo step and the sample step then passed on a targeted rerun (3/3 with setup). Print, planner, settings, deletion steps passed in the first run |
+| Impeccable mechanical detector over the changed files | 0 findings |
+
+**Not yet verified (planned for B and C):** the other signed-in screens beyond the shared tokens; the public landing, pricing and authentication pages; keyboard, focus, contrast and reduced-motion walk-through of the new frame; layouts at 768 and 1024 px (only 1440 and 375 px were captured for the dashboard); the rendered printable summary under the new styles (the Phase 6 print step passed, but its output was not re-inspected visually); Phases 4, 5, 7, 8 browser suites; the phone drawer was exercised only by its code paths (existing tests do not open it).
+
+**Known gaps and decisions for you:** the sidebar has no count badges (the reference has them; they need extra queries per page); text is larger than the reference's by design (see REFERENCE.md); the event switcher moved into the sidebar; the reference's "All changes saved" line is not reproduced; a workspace-level overview page was not added (it would be a new route).
+
 ## Deployed-site verification (PENDING: none of this has been run)
 Fill this in yourself after you deploy, with real results only. Leave a row blank if you did not run it. The deployed URL and the dates are yours to supply.
 

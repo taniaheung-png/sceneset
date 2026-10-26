@@ -28,7 +28,7 @@ export default async function DemoView({ params }: PageProps<"/demo/[view]">) {
   const plan = buildPlan(demoPlan());
   return (
     <>
-      <PageHeader event="Sample event" title={v.label} />
+      <PageHeader event={plan.event.title} title={v.label} />
       <p className="rounded-md bg-sunken p-3 text-sm text-ink-2">
         Read-only view of fictional sample data. In a real workspace this screen has forms to add and edit; here nothing can be changed or saved.
       </p>

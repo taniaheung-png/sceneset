@@ -1,12 +1,13 @@
-/** Consistent content header: current event, view title, primary action. */
-export function PageHeader({ event, title, children }: { event?: string; title: string; children?: React.ReactNode }) {
+/** Page heading in the reference's pattern: a small coral label, a large navy title, one line of intro, actions on the right. */
+export function PageHeader({ event, title, intro, children }: { event?: string; title: string; intro?: string; children?: React.ReactNode }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3 border-b border-rule pb-4">
-      <div>
-        {event && <p className="text-sm text-ink-2">{event}</p>}
-        <h1 className="text-2xl font-bold leading-tight">{title}</h1>
+    <header className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3">
+      <div className="min-w-0">
+        {event && <p className="eyebrow">{event}</p>}
+        <h1 className="page-title">{title}</h1>
+        {intro && <p className="page-intro">{intro}</p>}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="no-print flex flex-wrap items-center gap-2">{children}</div>}
     </header>
   );
 }

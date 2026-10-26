@@ -4,12 +4,12 @@ import type { ComponentProps, ReactNode } from "react";
 type Common = { label: string; hint?: string; error?: string };
 
 const control =
-  "min-h-11 w-full rounded-md border bg-surface px-3 text-base text-ink placeholder:text-ink-2 disabled:bg-sunken";
+  "min-h-11 w-full rounded-[0.4375rem] border bg-surface px-3 text-sm text-ink placeholder:text-ink-2 disabled:bg-sunken";
 
 function Wrap({ id, label, hint, error, children }: Common & { id: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-semibold">
+      <label htmlFor={id} className="text-[0.8125rem] font-semibold text-ink-2">
         {label}
       </label>
       {children}

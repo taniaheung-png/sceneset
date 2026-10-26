@@ -1,11 +1,10 @@
-import Link from "next/link";
-import { EventSwitcher, EventTabs } from "@/components/events/EventNav";
 import { Banner } from "@/components/site/AuthShell";
+import { ButtonLink } from "@/components/ui/Button";
 import { CueTab } from "@/components/ui/CueTab";
+import { PencilIcon, PrinterIcon } from "@/components/ui/icons";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { EVENT_STATUSES } from "@/lib/eventOptions";
 import { getEvent } from "@/lib/events";
-import { createClient } from "@/lib/supabase/server";
 import { formatInZone, toLocalInput } from "@/lib/time";
 
 const TONE = { planning: "info", confirmed: "success", done: "neutral" } as const;
@@ -13,9 +12,6 @@ const TONE = { planning: "info", confirmed: "success", done: "neutral" } as cons
 export default async function EventLayout({ children, params }: LayoutProps<"/w/[ws]/events/[ev]">) {
   const { ws, ev } = await params;
   const { event, canManage } = await getEvent(ws, ev);
-  const supabase = await createClient();
-  const { data: others } = await supabase.from("events").select("id, title").eq("workspace_id", ws).is("archived_at", null).order("starts_at");
-  const switchable = (others ?? []).some((o) => o.id === ev) ? others! : [{ id: ev, title: event.title }, ...(others ?? [])];
 
   const tz = event.timezone;
   const fmt = (iso: string) => formatInZone(new Date(iso), tz, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -23,31 +19,32 @@ export default async function EventLayout({ children, params }: LayoutProps<"/w/
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-x-5 gap-y-4">
+        <div className="flex min-w-0 items-center gap-4">
           <CueTab date={toLocalInput(new Date(event.starts_at), tz).slice(0, 10)} />
-          <div>
-            <Link href={`/w/${ws}/events`} className="no-print text-sm font-semibold text-primary underline">All events</Link>
-            <h1 className="text-2xl font-bold leading-tight">{event.title}</h1>
-            <p className="text-sm text-ink-2">
+          <div className="min-w-0">
+            <p className="eyebrow">{event.type === "other" ? "Event" : event.type}</p>
+            <h1 className="page-title">{event.title}</h1>
+            <p className="page-intro">
               <span className="num">{fmt(event.starts_at)} to {fmt(event.ends_at)}</span> ({tz})
               {event.venues?.name ? ` at ${event.venues.name}` : ""}
             </p>
-            <div className="mt-1 flex gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               <StatusChip tone={TONE[event.status]}>{EVENT_STATUSES.find(([k]) => k === event.status)?.[1]}</StatusChip>
               {event.archived_at && <StatusChip tone="warn">Archived</StatusChip>}
             </div>
           </div>
         </div>
-        <EventSwitcher ws={ws} current={ev} events={switchable} />
-      </div>
+        <div className="no-print flex flex-wrap items-center gap-3">
+          {canManage && (
+            <ButtonLink href={`${base}/edit`} variant="secondary"><PencilIcon width={16} height={16} />Edit event</ButtonLink>
+          )}
+          <ButtonLink href={`${base}/summary`}><PrinterIcon width={16} height={16} />Print summary</ButtonLink>
+        </div>
+      </header>
       {event.archived_at && (
         <Banner tone="info">This event is archived. It is hidden from the events list; show archived events in the list to restore it.</Banner>
       )}
-      <EventTabs
-        base={base}
-        items={[{ slug: "", label: "Dashboard" }, { slug: "tasks", label: "Tasks and notes" }, { slug: "suppliers", label: "Suppliers and quotes" }, { slug: "budget", label: "Budget" }, { slug: "guests", label: "Guests" }, { slug: "schedule", label: "Run of show" }, { slug: "layout", label: "Venue layout" }, { slug: "summary", label: "Print summary" }, ...(canManage ? [{ slug: "edit", label: "Edit event" }] : [])]}
-      />
       {children}
     </>
   );
