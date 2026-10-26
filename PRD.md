@@ -1,6 +1,6 @@
 ﻿# SceneSet — Product Requirements Document
 
-> **DRAFT for founder review.** Drafted by an AI assistant (Claude) on 2026-10-25 from the assignment PDF and lectures L1–L7. Not reviewed or approved. The student's own contribution, research and any AI-use declaration are left for the student to complete accurately. Nothing here is validated customer evidence.
+> **Submission version.** MKTG 4150 NPM 2627 T1, Team Assignment 1, app 4 (SceneSet). Drafted with AI assistance and then reviewed, built and tested by the student; the AI-use declaration is on the cover page and in `README.md` §11. Prices and customer assumptions are unvalidated hypotheses, and nothing here is validated customer evidence. All data in the app is fictional.
 
 **Status key.** *[SRC]* = requirement from the assignment (PDF page cited). *[USER]* = requirement from the founder's build brief. *[ASM]* = implementation assumption or hypothesis, changeable. Prices, permissions and engineering choices are **[ASM]**, not instructor requirements.
 

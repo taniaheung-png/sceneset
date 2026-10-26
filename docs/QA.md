@@ -380,10 +380,10 @@ Scope: the whole app was restyled to the supplied reference site (`docs/design/R
 
 **Not verified:** screen-reader behaviour; real touch devices (the planner's drag handling has `touch-action: none` and pointer capture but was exercised only with a mouse and the keyboard); browsers other than Chromium; the 768 and 1024 px layouts were checked by the overflow audit and captured, but only the 1440 and 375 px captures were reviewed in detail; the loading fallback is plain text and was not screenshotted; no sidebar count badges (not built); real-inbox email checks (P2.13, P2.15, P2.16), the fresh-project dry run (P8.10) and every deployed-site check remain pending exactly as before.
 
-## Deployed-site verification (PENDING: none of this has been run)
+## Deployed-site verification (partly run: smoke only)
 Fill this in yourself after you deploy, with real results only. Leave a row blank if you did not run it. The deployed URL and the dates are yours to supply.
 
-- Deployed URL: ______________________  Date checked: ______________  Checked by: ______________
+- Deployed URL: https://sceneset-iota.vercel.app  Date checked: 2026-10-26 (smoke only)  Checked by: the student, with the read-only smoke script
 - Environment: `PAYMENT_SANDBOX_ENABLED` = ________ (the coursework demo uses `true`)
 - Database: new project / existing development project (circle one). It must hold fictional data only.
 
@@ -392,7 +392,7 @@ Fill this in yourself after you deploy, with real results only. Leave a row blan
 | Fresh-project dry run (README 3a): `check:env` all ok |  |  |
 | Fresh-project dry run: `rls-remote-test` passes |  |  |
 | Fresh-project dry run: `e2e/phase8.mjs` passes |  |  |
-| `npm run smoke -- <deployed URL>` ends with "All smoke checks passed" |  |  |
+| `npm run smoke -- <deployed URL>` ends with "All smoke checks passed" | pass | All checks passed on 2026-10-26; it does not test sign-in, email, the database or the sandbox |
 | Landing page opens signed out, on a phone and a desktop |  |  |
 | `/demo` opens signed out, is read-only and says it is fictional |  |  |
 | Protected routes (`/app`, `/onboarding`, a `/w/...` link) send a signed-out visitor to sign-in |  |  |

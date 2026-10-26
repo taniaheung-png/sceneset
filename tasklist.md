@@ -1,6 +1,6 @@
 # SceneSet — tasklist.md
 
-> **DRAFT for founder review** (AI-drafted 2026-10-25). Nothing is pre-checked. Mark `[x]` only after the stated **Gate** passes; partial/failed/blocked tasks stay `[ ]` with a status note. Requirement IDs (R##) are defined in `PRD.md` §2.1. Execute strictly the first pending task; stop at each phase checkpoint for the founder's manual review and commit. Never stage/commit automatically.
+> **Submission version.** A task is ticked `[x]` only after its stated **Gate** passed; items not yet passed stay `[ ]` with a status note (real-inbox email checks P2.13, P2.15, P2.16 and the fresh-project dry run P8.10 are open on purpose). Requirement IDs (R##) are defined in `PRD.md` §2.1. Evidence for each tick is in `docs/QA.md`.
 
 Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc --noEmit` · **LINT** = `npm run lint` · **DEV** = `npm run dev` page renders, no console errors · **DB** = migrations applied to verified dev DB + rows inspected · **VIS** = checked at 375/768/1024/1440 px · **A11Y** = keyboard-only pass + contrast measured.
 

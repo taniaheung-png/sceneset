@@ -2,7 +2,7 @@
 
 SceneSet is a desktop-first event-planning workspace (coursework prototype). One shared plan holds an event's tasks, notes, suppliers and quotes, budget, guests, running order and venue layout, with a readiness checklist and a printable summary. Next.js (App Router) + TypeScript + Tailwind, with Supabase (Postgres, Auth, row-level security).
 
-**Status: all eight implementation phases are built and verified locally against a development Supabase project. It has not been deployed.** Everything below that says "verified" refers to local runs and the development project; deployed-site checks are listed separately as **not run**.
+**Status: all eight implementation phases are built and verified locally against a development Supabase project, and the site is deployed (section 11 has the links).** Everything below that says "verified" refers to local runs and the development project; the checks on the deployed site are listed separately in section 8 and `docs/QA.md`, and each is marked run or **not run**.
 
 **Honest labels, kept in the product:** demo data is fictional; the HKD 149 per event and HKD 299 per month prices are unvalidated hypotheses; payments are a simulation and no real payment is ever taken; the supplier suggestions on the pricing page are an illustrative concept, not a marketplace.
 
@@ -200,8 +200,8 @@ Supabase's built-in email service is for development only. Per Supabase's docume
 
 Specialist event templates; supplier referrals as a real revenue line; a public RSVP page and email invitations; calendar export (`.ics`); CSV or PDF export; realtime updates; seat assignment; multi-currency events; an audit log; invitations by email (instead of adding existing accounts); a real payment provider in test mode first (server-held secrets, signed webhooks, idempotent grants); automatic clean-up of old sample and test data; keeping typed text when a network error interrupts a save; server-side search for very large lists. This list matches `PRD.md` section 2.5.
 
-## 11. Author declarations (complete before submitting)
+## 11. Author declarations 
 
-- Repository URL: ______________________
-- Live site URL: ______________________ (leave blank until you have deployed it yourself)
-- AI-use declaration (percentages and description, as the course requires): ______________________
+- Repository URL: https://github.com/taniaheung-png/sceneset
+- Live site URL: https://sceneset-iota.vercel.app/
+- AI-use declaration: We declare that 40% of the work involves AI assistance, while the rest is our original contribution, including acknowledged sources and collaborations, per academic regulations.
