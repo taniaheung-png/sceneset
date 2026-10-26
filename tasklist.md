@@ -129,19 +129,19 @@ Gate shorthand: **BUILD** = `npm run build` zero errors · **TYPE** = `npx tsc -
 
 ## Phase 8 — Verify, fix, polish, hand over  (R25–R30, all)
 
-- [ ] **P8.1** (R29) Run full organiser checklist (11 items) end-to-end; log results. Gate: each item pass/fail in `docs/QA.md` with evidence.
-- [ ] **P8.2** Route audit: every route in `PRD.md` §3.1 reachable, no dead controls. Gate: checklist.
-- [ ] **P8.3** (R27) Tenant/role audit via direct API/SQL for every table and the summary route. Gate: all denial tests pass.
-- [ ] **P8.4** (R25) Keyboard-only and screen-reader landmark pass; contrast re-measure. Gate: A11Y notes.
-- [ ] **P8.5** (R26) Responsive audit at 375/768/1024/1440. Gate: VIS, no page overflow.
-- [ ] **P8.6** Error/network/validation states: simulate failure and confirm data preserved, no false "Saved". Gate: manual log.
-- [ ] **P8.7** Calculation audit (money, readiness, headcount, timezone). Gate: `npm test` passes.
-- [ ] **P8.8** Add E2E organiser-flow check (smallest tool, e.g., Playwright) + access-denial checks. Gate: runs green locally.
-- [ ] **P8.9** Remove misleading placeholders (incl. PrototypeNotice and /demo preview banner, /dev/kit), update `PRD.md`/`tasklist.md` to implemented state, record limitations. Gate: diff review.
-- [ ] **P8.10** (R29) `README.md`: clean setup, migrations, seed/demo, env config, tests, deployment, public-access verification checklist, availability-period checklist, repo/live URL placeholders. Gate: clean-setup dry run on a fresh dev DB.
-- [ ] **P8.11** (R29) `docs/QA.md` human testing grid with blank "What went well / Needs improvement / Questions / Ideas" (L5 testing grid) and research log. Gate: blanks remain blank.
-- [ ] **P8.12** (R30) Concise future-upgrade list in README. Gate: matches `PRD.md` §2.5.
-- [ ] **P8.13** Final build/type/lint/test run and handover summary; mark deployed checks as not run unless run. Checkpoint report.
+- [x] **P8.1** (R29) Run full organiser checklist (11 items) end-to-end; log results. Gate: each item pass/fail in `docs/QA.md` with evidence. *Evidence: `e2e/phase8.mjs` J1 to J12 on a Free workspace; table in `docs/QA.md` Phase 8. Pre-confirmed accounts: not evidence of email delivery.*
+- [x] **P8.2** Route audit: every route in `PRD.md` §3.1 reachable, no dead controls. Gate: checklist. *Evidence: `smoke` (public and redirect routes), Phase 8 audit loops over all 12 signed-in views and 8 public views; `/dev/kit` is 404 in a production build.*
+- [x] **P8.3** (R27) Tenant/role audit via direct API/SQL for every table and the summary route. Gate: all denial tests pass. *Evidence: `test:remote` all-tables matrix (anonymous, non-member, collaborator, organiser control) plus summary-route checks in the browser suites.*
+- [x] **P8.4** (R25) Keyboard-only and screen-reader landmark pass; contrast re-measure. Gate: A11Y notes. *Scope: automated landmark, label, name, 44 px, skip-link and focus checks plus keyboard planner tests and `npm run contrast`; no screen reader was used (recorded as not verified).*
+- [x] **P8.5** (R26) Responsive audit at 375/768/1024/1440. Gate: VIS, no page overflow. *Evidence: Phase 8 sweep, 12 views at 375/768/1024/1440, after fixing the hidden-text overflow.*
+- [x] **P8.6** Error/network/validation states: simulate failure and confirm data preserved, no false "Saved". Gate: manual log. *Evidence: offline save test (error page, no false success, no half-written data).*
+- [x] **P8.7** Calculation audit (money, readiness, headcount, timezone). Gate: `npm test` passes. *Evidence: `npm test` 141/141 (money, readiness, headcount, timezone, layout, entitlements).*
+- [x] **P8.8** Add E2E organiser-flow check (smallest tool, e.g., Playwright) + access-denial checks. Gate: runs green locally. *Evidence: `npm run test:e2e:p8` 17/17 on a production build plus the per-phase access-denial checks.*
+- [x] **P8.9** Remove misleading placeholders (incl. PrototypeNotice and /demo preview banner, /dev/kit), update `PRD.md`/`tasklist.md` to implemented state, record limitations. Gate: diff review. *`/dev/kit` is kept as a developer page and is a 404 in production builds (checked by `smoke`); the build-phase notice and demo preview banner are gone.*
+- [ ] **P8.10** (R29) `README.md`: clean setup, migrations, seed/demo, env config, tests, deployment, public-access verification checklist, availability-period checklist, repo/live URL placeholders. Gate: clean-setup dry run on a fresh dev DB. *Status: README written (setup, env, migrations, demo, tests, deployment, checklists). NOT ticked: the gate needs a dry run on a brand-new hosted project, which has not been done (the local in-memory Postgres applies all eight migrations from empty).*
+- [x] **P8.11** (R29) `docs/QA.md` human testing grid with blank "What went well / Needs improvement / Questions / Ideas" (L5 testing grid) and research log. Gate: blanks remain blank. *The grid and research log are blank by design; no human sessions were held.*
+- [x] **P8.12** (R30) Concise future-upgrade list in README. Gate: matches `PRD.md` §2.5.
+- [x] **P8.13** Final build/type/lint/test run and handover summary; mark deployed checks as not run unless run. Checkpoint report. *Final pass recorded in `docs/QA.md`. Deployed-site, availability-period and real-inbox checks were NOT run and remain unticked in `README.md` section 8 and P2.13, P2.15, P2.16.*
 
 ---
 

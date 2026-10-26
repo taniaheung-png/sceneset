@@ -261,6 +261,48 @@ try {
     && (await admin.from("workspaces").select("id", { count: "exact", head: true }).eq("id", w2.data)).count === 0);
   workspaces.splice(workspaces.indexOf(w2.data), 1);
 
+  // --- every data table, every role (P8.3): a systematic denial matrix through the real API
+  const blocked = (name, { data, error }) => record(name, !!error || (data?.length ?? 0) === 0, `got ${error ? error.code : data?.length + " rows"}`);
+  const MATRIX = [
+    ["venues", { name: "Matrix venue", width_cm: 1000, depth_cm: 800 }, { name: "renamed" }],
+    ["events", { title: "Matrix event", starts_at: start, ends_at: end }, { title: "renamed" }],
+    ["tasks", { event_id: evId, title: "Matrix task" }, { title: "renamed" }],
+    ["notes", { event_id: evId, body: "Matrix note" }, { body: "renamed" }],
+    ["suppliers", { name: "Matrix supplier" }, { name: "renamed" }],
+    ["quotes", { event_id: evId, supplier_id: sup.data?.id, amount_minor: 100 }, { amount_minor: 5 }],
+    ["budget_items", { event_id: evId, category: "matrix", name: "Matrix line" }, { name: "renamed" }],
+    ["guests", { event_id: evId, name: "Matrix guest" }, { name: "renamed" }],
+    ["schedule_entries", { event_id: evId, title: "Matrix entry", starts_at: start, ends_at: end }, { title: "renamed" }],
+    ["layout_items", { event_id: lev.data?.id, kind: "table", label: "Matrix", x_cm: 0, y_cm: 0, w_cm: 100, h_cm: 100 }, { label: "renamed" }],
+  ];
+  for (const [t, row, change] of MATRIX) {
+    const made = await organiser.db.from(t).insert({ workspace_id: ws, ...row }).select("id").single();
+    if (t !== "layout_items") record(`${t}: organiser can insert (control)`, !made.error, made.error?.message);
+    const id = made.data?.id ?? (await admin.from(t).select("id").eq("workspace_id", ws).limit(1)).data?.[0]?.id;
+    expectDenied(`${t}: anonymous cannot read`, await anon.from(t).select("id").limit(1), "42501");
+    const mine = await collab.db.from(t).select("id").eq("workspace_id", ws);
+    record(`${t}: a member (collaborator) can read`, !mine.error && (mine.data?.length ?? 0) > 0, mine.error?.message ?? "no rows");
+    expectEmpty(`${t}: outsider reads nothing`, await outsider.db.from(t).select("id").eq("workspace_id", ws));
+    const out = await outsider.db.from(t).insert({ workspace_id: ws, ...row });
+    record(`${t}: outsider cannot insert`, !!out.error && (t === "layout_items" || out.error.code === "42501"), `got ${out.error?.code ?? "success"}`);
+    blocked(`${t}: outsider cannot update`, await outsider.db.from(t).update(change).eq("id", id).select("id"));
+    blocked(`${t}: outsider cannot delete`, await outsider.db.from(t).delete().eq("id", id).select("id"));
+    if (t !== "notes") {
+      const co = await collab.db.from(t).insert({ workspace_id: ws, ...row });
+      record(`${t}: collaborator cannot insert`, !!co.error, "a collaborator inserted a row");
+    }
+    blocked(`${t}: collaborator cannot update another person's row`, await collab.db.from(t).update(change).eq("id", id).select("id"));
+    blocked(`${t}: collaborator cannot delete another person's row`, await collab.db.from(t).delete().eq("id", id).select("id"));
+    const still = await admin.from(t).select("id", { count: "exact", head: true }).eq("id", id);
+    record(`${t}: the row survived every denied attempt`, still.count === 1, `count ${still.count}`);
+  }
+  expectDenied("workspaces: anonymous cannot read", await anon.from("workspaces").select("id").limit(1), "42501");
+  blocked("workspaces: outsider cannot rename it", await outsider.db.from("workspaces").update({ name: "pwned" }).eq("id", ws).select("id"));
+  expectEmpty("workspace_members: outsider sees no members", await outsider.db.from("workspace_members").select("user_id").eq("workspace_id", ws));
+  expectEmpty("profiles: outsider cannot read a member's profile", await outsider.db.from("profiles").select("id").eq("id", owner.id));
+  expectDenied("entitlement_events: anonymous cannot read", await anon.from("entitlement_events").select("id").limit(1), "42501");
+  expectEmpty("entitlement_events: outsider reads nothing", await outsider.db.from("entitlement_events").select("id").eq("workspace_id", ws));
+
   // --- sandbox entitlements and plan limits (migration 007), on a fresh FREE workspace
   const k = (n) => `remote-${run}-${n}-0123456789`;
   // Migration 008: the sandbox functions are executable only with the server's secret key; the app passes the verified user as `actor`.

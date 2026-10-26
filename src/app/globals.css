@@ -108,6 +108,14 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/*
+ * A table inside a scroll container may hold visually hidden text (`.sr-only` is absolutely positioned). Without a positioned
+ * ancestor that text is placed against the page and makes it scroll sideways, so every scroll container is positioned.
+ */
+[class~="overflow-x-auto"] {
+  position: relative;
+}
+
 button,
 a,
 select,

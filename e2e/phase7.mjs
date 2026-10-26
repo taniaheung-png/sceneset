@@ -346,7 +346,9 @@ try {
     await owner.getByLabel("Event to upgrade").selectOption(evA);
     await owner.getByRole("button", { name: "Try the test upgrade" }).click();
     await owner.waitForURL(/\/upgrade\/sandbox\?/);
-    assert(/Plans Event One/.test(await owner.locator("main").innerText()), "event name missing on the checkout");
+    await owner.locator("[data-test-mode]").waitFor(); // workspace pages show "Loading…" first; read the page only once it has rendered
+    const co = await owner.locator("main").innerText();
+    assert(/Plans Event One/.test(co), `event name missing on the checkout; url ${owner.url().replace(/[0-9a-f-]{36}/g, "<id>")}; page text: ${co.replace(/s+/g, " ").slice(0, 160)}`);
     await submit(owner, owner.getByRole("button", { name: "Simulate success" }));
     await owner.getByText(/Test upgrade recorded/).waitFor();
     assert((await tier()) === "event", await tier());

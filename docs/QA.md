@@ -230,6 +230,148 @@ Limits apply to new events and members only; a workspace that falls back to Free
 ### Cleanup
 The development project holds 0 users, workspaces, events and checkout log rows after the runs; no existing data was touched.
 
+## Phase 8 — Final verification, polish and handover (2026-10-26)
+Scope: confirm each requirement against real evidence, run the complete organiser journey with isolated fictional accounts, run one final sequential pass, inspect the finished interface, review security and configuration, and finish the documentation. No feature was added. **Nothing was deployed; deployed-site checks and real-inbox checks were not run.**
+
+### Final verification pass (one sequential run, fresh accounts for every browser suite)
+| Check | Result |
+|---|---|
+| `npm test` (unit, static and SQL/RLS on all eight migrations from an empty database) | **141/141** |
+| `npm run check:env` | all ok (migrations 005 to 008 probed; 001 to 004 by the table probe) |
+| `npm run test:remote` (real development project, real API, including the all-tables denial matrix) | **293/293** |
+| `npm run test:e2e` (Phase 2) | **17/17** |
+| `npm run test:e2e:p3` / `p4` / `p5` | **25/25** / **27/27** / **19/19** |
+| `npm run test:e2e:p6` | **28/28** |
+| `npm run test:e2e:p7` (sandbox on) | **23/23 (see defect 6: one test timing defect was fixed, then it passed)** |
+| `npm run test:e2e:p7:off` (fresh server, `PAYMENT_SANDBOX_ENABLED=false`) | **7/7** |
+| `npm run test:e2e:p8` (complete journey and audits) on a production build (`next start`) | **17/17** |
+| `npm run smoke` against that production build | **35/35 checks** |
+| `npm run contrast` | all 21 pairs pass |
+| lint, typecheck, production build | pass, 0 warnings |
+| Secret key in the client bundle (value searched in every file under `.next/static`) | 0 matches in 35 client files |
+
+**Remaining skips: none in any suite.** What was not run is listed under "Not verified" below.
+
+### The complete organiser journey (`e2e/phase8.mjs`, Free workspace, no admin fixtures)
+| # | Step | Result |
+|---|---|---|
+| J1 | Create a workspace and an overnight event (venue, capacity, budget target) | pass |
+| J2 | Add an organiser and a collaborator; role restrictions in the UI; a non-member reaches no route | pass |
+| J3 | Tasks (assign, move), notes, collaborator limits | pass |
+| J4 | Compare suppliers and quotes; accept one quote: exactly one budget line | pass |
+| J5 | Manual budget line with a paid amount; totals match the dashboard | pass |
+| J6 | Guests and RSVPs; confirmed headcount against capacity | pass |
+| J7 | Overnight running order (+1 day, ordering) | pass |
+| J8 | Save a venue layout; reload; kinds and coordinates persist | pass |
+| J9 | Readiness 11 of 11; the printed plan (A4-wide page, PDF text) has every section and no controls | pass |
+| J10 | Free limits refuse a second event and a fourth member; Event Upgrade and Organiser (cancel then success) change the limits | pass |
+| J11 | Refresh, sign out, sign in: every saved view is identical | pass |
+| J12 | A non-member still reaches nothing; the only owner cannot be demoted | pass |
+
+The journey uses pre-confirmed fictional accounts. **That is not evidence that confirmation, reset or any other email is delivered.** P2.13, P2.15 and P2.16 remain deferred and unticked.
+
+### Audits added in Phase 8 (all in `e2e/phase8.mjs`)
+- **Responsive (R26):** 12 signed-in views at 375, 768, 1024 and 1440 px: no page-level horizontal overflow.
+- **Accessibility basics (R25):** every signed-in and public page has exactly one `h1` and one `main`; every `nav` is named; every visible form control has a label; every button and link has a name; buttons and fields are at least 44 px tall; the first Tab stop is the skip link and it works; the next twelve Tab stops on the dashboard each show a focus indicator. Screen readers were **not** used.
+- **Errors and network (P8.6):** a task saved while the browser is offline shows "Something went wrong… may not have been saved", never "Task added"; after reconnecting no task was added and earlier data is intact. Typed text is not kept in that case (documented limitation).
+- **Unknown ids and redirects:** malformed and unknown workspace, event and demo ids give the same plain "Page not found" (signed in and out); a signed-out deep link goes to sign-in with a return path; an off-site `next` is not followed.
+
+### Defects found by this phase and fixed
+1. **Sideways page scroll on the events list and Settings at 375 px (real defect).** Visually hidden table text was absolutely positioned against the page when a table sat in a scroll container, widening the page by 130 to 270 px once the pages held real rows. The earlier sweeps used smaller data. Fix: scroll containers are positioned (`globals.css`). Re-measured: no overflow at 375, 768, 1024 or 1440 px on all 12 views.
+2. **Landing-page illustration disagreed with the product (misleading placeholder).** It showed "4 of 6 checks" and different budget numbers; the product has eleven readiness checks. The illustration now uses the same eleven checks (9 of 11) and the demo's numbers, and still says it is a static illustration.
+3. **Missing error and loading states.** A failed save fell back to the framework default. Added a plain error page (`error.tsx`) and a loading state for workspace pages.
+4. **Temporary build notice removed.** The "Prototype build, phase N of 8" banner is gone; the permanent disclosures (footer, pricing note, demo banner, test-mode checkout banner, printed footer) remain and are checked by `npm run smoke` and the journey.
+5. **Basic hardening headers added** (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`); checked by `npm run smoke`.
+6. **A test timing defect exposed by the new loading state (test defect, diagnosed with evidence).** In the final pass `test:e2e:p7` failed 5 steps (18/23); an immediate rerun passed 23/23 with unchanged code. Instrumenting the assertion and running it three times gave two failures whose page text was literally "Loading…" and one pass: the test read the checkout page before it had rendered, because workspace pages now show a loading fallback first. The product was correct (the page renders a moment later). The test now waits for the checkout banner before reading, and then passed 23/23. The five failing steps were the upgrade step and the four that depend on it.
+7. **Test-only races (not product defects):** the planner's add-object form resets after each add, so the test now waits for the reset before choosing the next kind; print was checked at desktop width in the first attempt, but a printer lays out at paper width, so print is checked in an A4-wide page (as in Phase 6).
+
+### Security and configuration review
+- **Tenant isolation and roles:** `test:remote` now runs a matrix over all ten workspace data tables plus workspaces, members, profiles and the entitlement log: anonymous cannot read; a non-member reads nothing and cannot insert, update or delete; a collaborator can read but cannot insert, update or delete another person's row (notes excepted for inserts); and every denied row survives. The print summary route is covered by the journey and Phase 6 (non-members get "Page not found").
+- **Secrets:** `SUPABASE_SECRET_KEY` is imported only by two server-action files (static test); no client file mentions it; the built client files do not contain its value; no `NEXT_PUBLIC_` variable carries a secret.
+- **Safe redirects:** off-site `next` values are ignored on sign-in and on the email-link route (tested in the browser and by `npm run smoke`).
+- **Deletion safeguards:** typed confirmation for workspace and account deletion; last-owner protection; a sole owner with other members is blocked (Phase 6 suites).
+- **Sandbox boundary:** off by default; the database functions are server-only; replayed raw requests, direct API calls and tampered forms are refused (Phase 7 suites, including the switched-off server).
+- **Development-only routes and tools:** `/dev/kit` is a 404 in a production build (checked on the `next start` run). `dev:users` and `test:remote` refuse to run without `RLS_TEST_CONFIRM=dev-project`; they are scripts, not routes.
+
+### Requirement-to-evidence summary (R01 to R30)
+"Verified" means the behaviour was exercised in a browser or through the real API against the development project (or locally) in the named suite; an ID appearing in a document is not proof.
+
+| ID | Requirement | Route or workflow | Evidence | Status |
+|---|---|---|---|---|
+| R01 | Landing page | `/` | Phase 1 sweep and 375 px first-screen check; landing screenshot inspected; `smoke` disclosure check; illustration fixed in Phase 8 | verified locally; deployed site not run |
+| R02 | Sign-up, sign-in, sign-out | `/signup`, `/login` | `test:e2e` (return path, safe redirect, session survives reload and second tab, sign-out); journey J11 | sign-in/out verified; **sign-up confirmation email deferred (P2.13)** |
+| R03 | Password reset incl. completion and expired states | `/forgot-password`, `/reset-password`, `/auth/confirm` | pages load (`smoke`, Phase 1 sweep); the email link flow needs a real inbox | **not verified end to end (P2.15, P2.16 deferred)** |
+| R04 | Workspace creation and roles | `/onboarding` | `test:e2e`; J1, J2 | verified |
+| R05 | Member management, last-owner protection | `/w/[ws]/settings` | `test:e2e` (add, unknown, duplicate, role change, last owner, remove, leave); `test:remote`; local SQL; J2, J12 | verified |
+| R06 | Events list, create, edit, archive, delete | `/events`, `/events/new`, `/edit` | `test:e2e:p3`; J1 | verified |
+| R07 | Dashboard counts from saved records | `/events/[ev]` | p3 to p6 count-match steps; J5, J6, J9 | verified |
+| R08 | Task board | `/tasks` | p3 (create, assign, move, filters, collaborator rules); J3 | verified |
+| R09 | Notes | `/tasks` | p3 (role-based edit rights); J3 | verified |
+| R10 | Supplier directory | `/suppliers` | p4; J4 | verified |
+| R11 | Quote comparison, shortlist, accept | `/suppliers` | p4; remote; J4 | verified |
+| R12 | Budget, totals, accepted quote becomes one line | `/budget` | p4 (double click, re-open, delete, stale edit); unit; J4, J5 | verified |
+| R13 | Guests, RSVP, headcount against capacity | `/guests` | p5; unit; J6 | verified |
+| R14 | Run of show with warnings, overnight | `/schedule` | p5 (ordering, overnight, timezone, warnings); unit; J7 | verified |
+| R15 | Venue layout (2D, numbers and keyboard, saved) | `/layout` | p6 (keyboard, numeric bounds, drag, atomic save, stale save, venue fit); J8 | verified |
+| R16 | Search and filters, reset, no-results | each list | p3 (events, tasks), p4 (suppliers), p5 (guests) | verified |
+| R17 | Readiness, explained | dashboard | unit; p6 (0%, each fix, 100%); J9 (11 of 11) | verified |
+| R18 | Print-friendly summary, authorised only | `/summary` | p6 and J9 (print emulation, PDF text, no controls, non-members 404) | verified (Chromium print only) |
+| R19 | Fictional demo, read-only; editable sample in own workspace | `/demo`, Events | p6 (public demo equals app rules; sample load/reset isolation); remote | verified |
+| R20 | Settings (profile, workspace, privacy, deletion) | `/settings` | p6 | verified |
+| R21 | Pricing page | `/pricing` | p7; unit (numbers against `PRD.md`); `smoke` | verified |
+| R22 | Test-only payment sandbox | `/upgrade`, `/upgrade/sandbox` | p7, p7:off, remote, local SQL | verified |
+| R23 | Illustrative vendor referral | `/pricing` | p7 (separate, labelled, no links); screenshot | verified |
+| R24 | Privacy page, collection notices, deletion | `/privacy`, forms, `/settings` | p6; collection notices on the member, event, note and guest forms (p3, p5) | verified; not legally reviewed |
+| R25 | Accessibility baseline | all | `contrast` (21 pairs); Phase 8 audit (landmarks, labels, names, 44 px, skip link, focus); planner keyboard (p6) | automated and keyboard checks verified; **screen readers not tested** |
+| R26 | Responsive 375/768/1024/1440 | all | Phase 8 sweep (12 signed-in views); Phase 1 sweep (public) | verified; real devices not tested |
+| R27 | Tenant isolation everywhere | all | `test:remote` matrix and earlier checks; local RLS tests; browser not-found checks in p3 to p8 | verified |
+| R28 | Money in minor units, timezone | budget, schedule | unit tests; p4 amounts; p5 New York event; J7 | verified |
+| R29 | Organiser checklist and testing grid | README section 6; QA grid | checklist written; automated equivalent is J1 to J12; grid left **blank** (no human sessions held) | checklist done; **human sessions not held** |
+| R30 | Concise post-MVP list | README section 10 | matches `PRD.md` section 2.5 | done |
+
+### Not verified (and why)
+- **Any deployed site:** nothing was deployed. Public-access, availability-period and deployed email checks are listed as unticked checklists in `README.md` section 8.
+- **Real-inbox email (P2.13, P2.15, P2.16):** sign-up confirmation, forgot-password and reset completion, including expired and reused links.
+- **Screen readers, real touch devices, browsers other than Chromium, Windows high-contrast mode.**
+- **A fresh-project hosted dry run** of migrations 001 to 008 applied to a brand-new Supabase project in one go (the local in-memory Postgres does apply all eight from empty).
+- **Load:** lists beyond a few hundred rows; concurrency beyond the stale-edit and idempotency tests.
+- **Legal review** of the privacy page and terms; **price validation** (prices are hypotheses).
+
+### Known limitations
+Pages refresh on navigation (no realtime); limits apply to new events and members only; the sandbox has no recurring billing; sample and test data are not cleaned up automatically; typed text is lost when a save fails because the connection dropped (nothing is reported as saved); on a phone the guest and budget tables scroll sideways inside their own box; built-in Supabase email is development-only and rate-limited; the printed plan was checked in Chromium only.
+
+### Cleanup
+The development project holds 0 users, workspaces, events and checkout log rows after the runs; no existing data was touched. All test processes were stopped before this record was finished.
+
+## Deployed-site verification (PENDING: none of this has been run)
+Fill this in yourself after you deploy, with real results only. Leave a row blank if you did not run it. The deployed URL and the dates are yours to supply.
+
+- Deployed URL: ______________________  Date checked: ______________  Checked by: ______________
+- Environment: `PAYMENT_SANDBOX_ENABLED` = ________ (the coursework demo uses `true`)
+- Database: new project / existing development project (circle one). It must hold fictional data only.
+
+| Check | Result (pass / fail / not run) | Notes |
+|---|---|---|
+| Fresh-project dry run (README 3a): `check:env` all ok |  |  |
+| Fresh-project dry run: `rls-remote-test` passes |  |  |
+| Fresh-project dry run: `e2e/phase8.mjs` passes |  |  |
+| `npm run smoke -- <deployed URL>` ends with "All smoke checks passed" |  |  |
+| Landing page opens signed out, on a phone and a desktop |  |  |
+| `/demo` opens signed out, is read-only and says it is fictional |  |  |
+| Protected routes (`/app`, `/onboarding`, a `/w/...` link) send a signed-out visitor to sign-in |  |  |
+| `/dev/kit` is a 404 |  |  |
+| Sign in with a pre-confirmed fictional account created with the `dev-users` script against this project |  |  |
+| Create a workspace, an event and a task; refresh; sign out and in: still there |  |  |
+| A second account cannot open the first account's workspace link ("Page not found") |  |  |
+| Plan page with the sandbox on: simulated checkout works and says "Test mode — No real payment taken" |  |  |
+| Plan page with the sandbox off (after changing the variable and redeploying): says it is switched off |  |  |
+| Print preview of an event summary on the deployed site |  |  |
+| **Deferred, needs a real inbox:** sign-up confirmation email (P2.13) |  | not run unless you test it |
+| **Deferred, needs a real inbox:** forgot-password email (P2.15) |  | not run unless you test it |
+| **Deferred, needs a real inbox:** reset completion and expired link (P2.16) |  | not run unless you test it |
+
+Limitation to keep in your submission: pre-confirmed accounts prove the product works on the deployed site; they do **not** prove that Supabase delivers confirmation or reset emails.
+
 ## Lessons / unresolved assumptions (Build–Measure–Learn)
 - Phase 1 lesson: UI UX Pro Max's first, broad query returned an off-target (wedding) result; a narrower product-type query was needed. Treat the tool as input, not authority.
 - Unresolved: all desirability/viability assumptions in `PRD.md` §1.1 remain untested.

@@ -20,7 +20,9 @@
     "test:e2e:p5": "node --env-file=.env.local e2e/phase5.mjs",
     "test:e2e:p6": "node --env-file=.env.local e2e/phase6.mjs",
     "test:e2e:p7": "node --env-file=.env.local e2e/phase7.mjs",
-    "test:e2e:p7:off": "node --env-file=.env.local e2e/phase7-disabled.mjs"
+    "test:e2e:p7:off": "node --env-file=.env.local e2e/phase7-disabled.mjs",
+    "test:e2e:p8": "node --env-file=.env.local e2e/phase8.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

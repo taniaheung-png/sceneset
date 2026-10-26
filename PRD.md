@@ -11,7 +11,7 @@
 4. Role matrix as in §5 (owner / organiser / collaborator).
 5. Image-only-slide limitation stays documented; no visual inspection is claimed.
 6. Supabase configuration does not block Phase 1. Database/auth tasks (Phase 2) stay unchecked until they can be tested against a real development project.
-Implementation assumptions made in Phase 1: Next.js 16.4.3 scaffold (`cacheComponents`/`partialPrefetching` switched **off** for simpler cookie-session pages; revisit if caching is needed); hand-written validation, no zod yet (Ponytail: add only if justified in Phase 2); no component library beyond five small primitives; native `<dialog>` for modals; temporary "Prototype build" notice on public pages and an in-shell "Preview, not the working app" banner on `/demo` (remove/update at Phase 8).
+Implementation assumptions made in Phase 1: Next.js 16.4.3 scaffold (`cacheComponents`/`partialPrefetching` switched **off** for simpler cookie-session pages; revisit if caching is needed); hand-written validation, no zod yet (Ponytail: add only if justified in Phase 2); no component library beyond five small primitives; native `<dialog>` for modals; temporary "Prototype build" notice on public pages and an in-shell "Preview, not the working app" banner on `/demo` (both removed in Phase 8; see section 9).
 
 **Source coverage (Phase 0 disclosure).**
 - Read as text: assignment pp. 10, 26–27, 32–43; L1 pp. 5–8, 14–26; L2 pp. 10–20, 31–38, 48–49, 60–72; L3 pp. 14–16, 25–26, 30–39, 42–46; L4 pp. 36–46, 60–78; L5 pp. 40–42, 49–52, 57–92; L6 pp. 49–51, 62–78, 80–117; L7 pp. 5–36, 40–87.
@@ -223,8 +223,8 @@ Specialist templates (assignment p.10 revenue idea), supplier referrals as real 
 | `/privacy` | Privacy page / PICS | public | R24 |
 | `/login`, `/signup` | Account | public | R02 |
 | `/forgot-password`, `/reset-password` | Recovery | public | R03 |
-| `/demo`, `/demo/[view]` | Read-only fictional demo (no login; Phase 1 = static preview shell) | public | R19 |
-| `/onboarding` | Create workspace; blank event or demo | auth | R04 |
+| `/demo`, `/demo/[view]` | Read-only fictional demo (no login), built by the same rules as the real app from a fixed fictional dataset | public | R19 |
+| `/onboarding` | Create a workspace (the first event is created from the events list; the editable sample is loaded from there) | auth | R04 |
 | `/w/[ws]/events` | Events list + search | member | R06 |
 | `/w/[ws]/events/[ev]` | Dashboard | member | R07 |
 | `/w/[ws]/events/[ev]/tasks` | Task board + notes | member | R08, R09 |
@@ -235,12 +235,12 @@ Specialist templates (assignment p.10 revenue idea), supplier referrals as real 
 | `/w/[ws]/events/[ev]/layout` | Venue layout | member | R15 |
 | `/w/[ws]/events/[ev]/summary` | Print summary | member | R18 |
 | `/w/[ws]/settings` | Workspace, members, plan, privacy, data deletion | member (admin: owner) | R05, R20 |
-| `/w/[ws]/upgrade` and `/w/[ws]/upgrade/sandbox` | Test checkout (success/cancel/fail) | owner | R22 |
+| `/w/[ws]/upgrade` and `/w/[ws]/upgrade/sandbox` | Plan, limits and test checkout (success/cancel/fail); members see the plan read-only | member (change: owner) | R22 |
 
 Unauthenticated deep links redirect to login then return. Unknown/forbidden event IDs return the same not-found page (no existence disclosure).
 
 ### 3.2 Core journeys & states
-1. Visitor → Try demo → disposable workspace → dashboard.
+1. Visitor → Try demo (read-only, no sign-in) → sign up → "Load a sample event" into their own workspace → dashboard.
 2. Visitor → Sign up → onboarding → blank event (title, dates, venue) → dashboard with empty-state prompts.
 3. Organiser works through tasks → budget → suppliers/quotes → guests → schedule → layout → readiness → print.
 Every view defines: loading, empty (invitation to act), no-results (with reset), validation (inline, preserves input), permission-denied (explains role), error/network (retry, data preserved), saving (disabled button, "Saved" only after persistence).
@@ -427,3 +427,22 @@ Self-promotion and removing/demoting the last owner are rejected in SQL. Members
 - `plan_status` was never created and is not needed: with no recurring billing there is no subscription state beyond the plan value.
 - Vendor referrals are static, fictional and labelled on `/pricing`; they contain no links, forms or commission logic.
 - Known limits: the checkout log is written for owners only and has no refund or dispute concept; ending the Organiser plan is a manual owner action; if a workspace with more members than the free limit is returned to free, nobody is removed (the limit applies to new members only).
+
+---
+
+## 9. Implemented state at handover (Phase 8)
+
+This section records what was actually built, where it differs from the plan above, and where the evidence is. The ordered evidence per requirement is the table in `docs/QA.md` ("Requirement-to-evidence summary"); an ID listed in this document is not proof that a feature works.
+
+**Deviations from the original plan (all deliberate and recorded in the phase notes above)**
+- The demo is read-only with no sign-in; the editable copy is "Load a sample event" in a signed-in workspace (founder decision 2). Anonymous sign-ins were not built.
+- Member management adds **existing registered accounts** by email; there is no email-invitation service.
+- The test-mode plan functions run with the server's secret key (migration 008) because their on/off switch (`PAYMENT_SANDBOX_ENABLED`) is a server variable the database cannot read. Signed-in users cannot call them.
+- Event Upgrade raises the workspace member limit to 10 (it is one-off per event); it does not raise the active-event limit. Organiser removes both limits. The printed summary drops its footer for an upgraded event or an Organiser workspace.
+- The temporary "Prototype build" notice and the "Preview, not the working app" demo banner were removed. The permanent disclosures remain: the site footer, the pricing note, the demo banner ("Read-only demo… fictional"), the checkout banner ("Test mode — No real payment taken"), and the printed footer.
+- `/dev/kit` (a developer component page) stays in the repository but returns 404 in production builds; `npm run smoke` checks that against any running site.
+- Added in Phase 8 without changing any feature: a plain error page and a loading state, basic security headers, and the read-only `npm run smoke` script.
+
+**Configuration for a deployment:** see `README.md` sections 2 and 8 (environment variables, auth redirect URLs, the sandbox setting, smoke-test and availability checklists). Nothing has been deployed.
+
+**Known limitations (current):** not legally certified or reviewed; no realtime collaboration (pages refresh on navigation; the UI never claims "live"); the sandbox is not billing; demand and prices are unvalidated; limits apply to new events and members only; no automatic clean-up of old sample or test data; typed text is lost when a save fails because the connection dropped (the failure page says the save may not have happened and nothing is reported as saved); built-in Supabase email is development-only and rate-limited; real-inbox checks (P2.13, P2.15, P2.16) are deferred; screen-reader and real-device testing were not done; only Chromium was used for browser tests; image-only slides in the lecture material were not inspected.

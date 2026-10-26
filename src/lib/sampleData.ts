@@ -1,4 +1,5 @@
-// STATIC, FICTIONAL preview data for Phase 1. Replaced by real saved records from Phase 3 onward.
+// STATIC, FICTIONAL preview data for the landing-page product preview and the demo navigation labels. The demo pages themselves
+// build their plan from src/lib/demoData.ts through the same rules as the signed-in app.
 // All names, venues and amounts are invented. Amounts are minor units (HKD cents).
 export const sample = {
   event: {
@@ -9,7 +10,7 @@ export const sample = {
     capacity: 150,
     currency: "HKD",
   },
-  budget: { targetMinor: 8_000_000, plannedMinor: 7_200_000, committedMinor: 6_130_000, paidMinor: 2_500_000 },
+  budget: { targetMinor: 8_000_000, plannedMinor: 7_200_000, committedMinor: 2_170_050, paidMinor: 500_000 },
   tasks: { open: 14, overdue: 3, done: 9 },
   guests: { invited: 96, confirmed: 54, tentative: 11, declined: 7 },
   runOfShow: [
@@ -19,13 +20,19 @@ export const sample = {
     { time: "19:30", title: "Lantern parade", owner: "Ming" },
     { time: "23:30", title: "Pack-down", owner: "Jonas" },
   ],
+  // The same eleven checks the product uses; 9 of 11 matches the read-only demo.
   readiness: [
     { label: "Venue chosen", done: true },
-    { label: "Budget target set", done: true },
-    { label: "Supplier quote accepted", done: true },
-    { label: "Key tasks complete", done: false },
+    { label: "Budget set up", done: true },
+    { label: "Within budget", done: true },
+    { label: "Tasks planned", done: true },
+    { label: "Nothing overdue", done: false },
+    { label: "Supplier quotes decided", done: false },
+    { label: "Guest list started", done: true },
+    { label: "Attendance within capacity", done: true },
     { label: "Running order drafted", done: true },
-    { label: "Layout saved", done: false },
+    { label: "No same-person clashes", done: true },
+    { label: "Venue layout saved", done: true },
   ],
 };
 
